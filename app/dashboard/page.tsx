@@ -23,14 +23,15 @@ export interface Exam {
   createdAt: string;
 }
 
-type Tab = "calendar" | "ai";
+type CalendarMode = "all" | "nearest" | "filter";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
-  const [activeTab, setActiveTab] = useState<Tab>("calendar");
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>("all");
+  const [aiOpen, setAiOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
 
@@ -83,6 +84,9 @@ export default function DashboardPage() {
   const nearest = exams
     .filter((e) => !e.completed && new Date(e.date) >= new Date())
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
+  const calendarExams =
+    calendarMode === "filter" ? filteredExams : (exams as Exam[]);
 
   return (
     <div
@@ -160,100 +164,213 @@ export default function DashboardPage() {
       <main
         style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 16px" }}
       >
-        {/* Nearest Exam */}
-        <NearestExamCard exam={nearest} loading={loading} />
+        {/* Top controls area (approx top 1/4) */}
+        <div style={{ display: "grid", gap: "16px", marginBottom: "20px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: "12px",
+            }}
+          >
+            {["nearest", "all", "filter"].map((k) => {
+              const active =
+                (k === "nearest" && calendarMode === "nearest") ||
+                (k === "all" && calendarMode === "all") ||
+                (k === "filter" && calendarMode === "filter");
 
-        {/* Tab navigation */}
-        <div
-          style={{
-            display: "flex",
-            gap: "4px",
-            marginBottom: "20px",
-            background: "var(--bg-card)",
-            borderRadius: "12px",
-            padding: "4px",
-            border: "1px solid var(--border)",
-            width: "fit-content",
-          }}
-        >
-          {(["calendar", "ai"] as Tab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                position: "relative",
-                padding: "8px 20px",
-                borderRadius: "8px",
-                border: "none",
-                background: "transparent",
-                color:
-                  activeTab === tab
-                    ? "var(--text-primary)"
-                    : "var(--text-muted)",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                cursor: "pointer",
-                transition: "color 0.15s",
-              }}
-            >
-              {activeTab === tab && (
-                <motion.div
-                  layoutId="tab-bg"
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    background:
-                      "linear-gradient(135deg, rgba(139,92,246,0.3), rgba(109,40,217,0.2))",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border-hover)",
+              return (
+                <button
+                  key={k}
+                  onClick={() => {
+                    if (k === "nearest") setCalendarMode("nearest");
+                    if (k === "all") setCalendarMode("all");
+                    if (k === "filter") setCalendarMode("filter");
                   }}
-                  transition={{ duration: 0.15 }}
+                  className="glass"
+                  style={{
+                    padding: "16px",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    border: active
+                      ? "1px solid var(--border-hover)"
+                      : "1px solid var(--border)",
+                    background: active
+                      ? "linear-gradient(135deg, rgba(139,92,246,0.16), rgba(109,40,217,0.10))"
+                      : undefined,
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  >
+                    <span style={{ fontSize: "1.2rem" }}>
+                      {k === "nearest" ? "🔥" : k === "all" ? "📅" : "🔎"}
+                    </span>
+                    <div>
+                      <p style={{ fontWeight: 800, fontSize: "0.95rem" }}>
+                        {k === "nearest"
+                          ? "View Nearest Exam"
+                          : k === "all"
+                            ? "View Calendar"
+                            : "View Filter"}
+                      </p>
+                      <p
+                        style={{
+                          color: "var(--text-muted)",
+                          fontSize: "0.78rem",
+                          marginTop: 2,
+                        }}
+                      >
+                        {k === "nearest"
+                          ? "Focus on your next exam"
+                          : k === "all"
+                            ? "Show all exams normally"
+                            : "Filter by type, semester, and subject"}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Nearest exam details card (shown when nearest view active) */}
+          <AnimatePresence mode="wait">
+            {calendarMode === "nearest" ? (
+              <motion.div
+                key="nearest-card"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.15 }}
+              >
+                <NearestExamCard exam={nearest} loading={loading} />
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+
+          {/* Filter controls (shown when filter view active) */}
+          <AnimatePresence mode="wait">
+            {calendarMode === "filter" ? (
+              <motion.div
+                key="filters"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.15 }}
+              >
+                <ExamFilterTabs
+                  active={activeFilter}
+                  onChange={setActiveFilter}
                 />
-              )}
-              <span style={{ position: "relative", zIndex: 1 }}>
-                {tab === "calendar" ? "📅 Calendar" : "🤖 AI Assistant"}
-              </span>
-            </button>
-          ))}
+                <div
+                  className="glass"
+                  style={{
+                    padding: "16px",
+                    marginBottom: "12px",
+                    borderRadius: "16px",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  <p style={{ fontWeight: 700, marginBottom: 6 }}>
+                    Filter options
+                  </p>
+                  <p
+                    style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}
+                  >
+                    Semester number and subject-based filtering will be added
+                    next.
+                  </p>
+                </div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
         </div>
 
-        <AnimatePresence mode="wait">
-          {activeTab === "calendar" ? (
+        {/* Calendar area */}
+        <motion.div
+          key={calendarMode}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.15 }}
+        >
+          <CalendarView
+            exams={calendarExams}
+            loading={loading}
+            onEdit={(exam) => {
+              setEditingExam(exam);
+              setShowForm(true);
+            }}
+            onDelete={handleDelete}
+            onToggleComplete={handleToggleComplete}
+            highlightExamId={
+              calendarMode === "nearest" ? nearest?.id : undefined
+            }
+            dimOthers={calendarMode === "nearest"}
+          />
+        </motion.div>
+      </main>
+
+      {/* Floating AI button + drawer */}
+      <button
+        onClick={() => setAiOpen(true)}
+        aria-label="Open AI assistant"
+        style={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          width: 56,
+          height: 56,
+          borderRadius: 16,
+          border: "1px solid var(--border-hover)",
+          background:
+            "linear-gradient(135deg, rgba(139,92,246,0.9), rgba(109,40,217,0.85))",
+          color: "white",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "1.4rem",
+          cursor: "pointer",
+          zIndex: 120,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+        }}
+      >
+        🤖
+      </button>
+
+      <AnimatePresence>
+        {aiOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.55)",
+              zIndex: 130,
+            }}
+            onClick={(e) => e.target === e.currentTarget && setAiOpen(false)}
+          >
             <motion.div
-              key="calendar"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.15 }}
-            >
-              <ExamFilterTabs
-                active={activeFilter}
-                onChange={setActiveFilter}
-              />
-              <CalendarView
-                exams={filteredExams}
-                loading={loading}
-                onEdit={(exam) => {
-                  setEditingExam(exam);
-                  setShowForm(true);
-                }}
-                onDelete={handleDelete}
-                onToggleComplete={handleToggleComplete}
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="ai"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.15 }}
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              style={{
+                position: "absolute",
+                right: 16,
+                bottom: 16,
+                width: "min(420px, calc(100vw - 32px))",
+              }}
             >
               <AIAssistant onExamAdded={fetchExams} />
             </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Exam Form Modal */}
       <AnimatePresence>

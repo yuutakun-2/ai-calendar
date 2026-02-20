@@ -23,8 +23,7 @@ export default function LoginPage() {
     setServerError("");
     try {
       await axios.post("/api/auth/login", data);
-      router.push("/dashboard");
-      router.refresh();
+      window.location.assign("/dashboard");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setServerError(err.response?.data?.error || "Login failed. Try again.");

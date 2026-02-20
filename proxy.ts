@@ -8,7 +8,7 @@ const PUBLIC_PATHS = [
   "/api/auth/register",
 ];
 
-export function middleware(req: NextRequest) {
+export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Allow public paths
