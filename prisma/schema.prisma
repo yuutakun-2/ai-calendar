@@ -1,0 +1,33 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  exams     Exam[]
+  createdAt DateTime @default(now())
+}
+
+model Exam {
+  id        String   @id @default(uuid())
+  code      String
+  subject   String
+  examType  String   // Mid Term | End Term | CA | Lab | Other
+  category  String   // Regular | Backlog
+  date      DateTime
+  startTime String
+  endTime   String
+  completed Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
