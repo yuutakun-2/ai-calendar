@@ -33,6 +33,7 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
           subject: exam.subject,
           examType: exam.examType as ExamInput["examType"],
           category: exam.category as ExamInput["category"],
+          semester: Number(exam.semester),
           date: exam.date.slice(0, 10),
           startTime: exam.startTime,
           endTime: exam.endTime,
@@ -47,6 +48,7 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
         subject: exam.subject,
         examType: exam.examType as ExamInput["examType"],
         category: exam.category as ExamInput["category"],
+        semester: Number(exam.semester),
         date: exam.date.slice(0, 10),
         startTime: exam.startTime,
         endTime: exam.endTime,
@@ -219,6 +221,20 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
                 <p className="error-text">{errors.category.message}</p>
               )}
             </div>
+          </div>
+
+          <div style={{ marginBottom: "16px" }}>
+            <label className="field-label">Semester</label>
+            <input
+              {...register("semester")}
+              type="number"
+              min="1"
+              placeholder="e.g. 1"
+              style={inputStyle(!!errors.semester)}
+            />
+            {errors.semester && (
+              <p className="error-text">{errors.semester.message}</p>
+            )}
           </div>
 
           <div style={{ marginBottom: "16px" }}>

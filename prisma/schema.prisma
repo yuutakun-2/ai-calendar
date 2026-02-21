@@ -23,6 +23,7 @@ model Exam {
   subject   String
   examType  String   // Mid Term | End Term | CA | Lab | Other
   category  String   // Regular | Backlog
+  semester  Int
   date      DateTime
   startTime String
   endTime   String

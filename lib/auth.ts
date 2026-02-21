@@ -26,15 +26,13 @@ export function verifyToken(req: NextRequest): JwtPayload | null {
   try {
     const token = req.cookies.get("token")?.value;
     if (!token) {
-      console.log("No token found");
       return null;
-    } else console.log("Token: ", token);
+    }
 
     return jwt.verify(token, getJwtSecret(), {
       algorithms: ["HS256"],
     }) as JwtPayload;
-  } catch (err) {
-    console.log("Token verification failed", err);
+  } catch {
     return null;
   }
 }

@@ -33,8 +33,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { code, subject, examType, category, date, startTime, endTime } =
-      parsed.data;
+    const {
+      code,
+      subject,
+      examType,
+      category,
+      semester,
+      date,
+      startTime,
+      endTime,
+    } = parsed.data;
 
     const exam = await prisma.exam.create({
       data: {
@@ -42,6 +50,7 @@ export async function POST(req: NextRequest) {
         subject,
         examType,
         category,
+        semester,
         date: new Date(date),
         startTime,
         endTime,

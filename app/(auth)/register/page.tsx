@@ -87,32 +87,34 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div style={{ marginBottom: "20px" }}>
-            <label className="field-label">Email</label>
-            <input
-              {...register("email")}
-              type="email"
-              placeholder="you@university.edu"
-              className={`input-field ${errors.email ? "error" : ""}`}
-              autoComplete="email"
-            />
-            {errors.email && (
-              <p className="error-text">{errors.email.message}</p>
-            )}
-          </div>
+          <div style={{ display: "grid", gap: "16px", marginBottom: "24px" }}>
+            <div>
+              <label className="field-label">Email</label>
+              <input
+                {...register("email")}
+                type="email"
+                placeholder="you@university.edu"
+                className={`input-field ${errors.email ? "error" : ""}`}
+                autoComplete="email"
+              />
+              {errors.email && (
+                <p className="error-text">{errors.email.message}</p>
+              )}
+            </div>
 
-          <div style={{ marginBottom: "24px" }}>
-            <label className="field-label">Password</label>
-            <input
-              {...register("password")}
-              type="password"
-              placeholder="At least 6 characters"
-              className={`input-field ${errors.password ? "error" : ""}`}
-              autoComplete="new-password"
-            />
-            {errors.password && (
-              <p className="error-text">{errors.password.message}</p>
-            )}
+            <div>
+              <label className="field-label">Password</label>
+              <input
+                {...register("password")}
+                type="password"
+                placeholder="At least 6 characters"
+                className={`input-field ${errors.password ? "error" : ""}`}
+                autoComplete="new-password"
+              />
+              {errors.password && (
+                <p className="error-text">{errors.password.message}</p>
+              )}
+            </div>
           </div>
 
           {serverError && (

@@ -15,6 +15,10 @@ export const ExamSchema = z.object({
   subject: z.string().min(1, "Subject name is required"),
   examType: z.enum(["Mid Term", "End Term", "CA", "Lab", "Other"]),
   category: z.enum(["Regular", "Backlog"]),
+  semester: z
+    .number()
+    .int("Semester must be an integer")
+    .min(1, "Semester must be at least 1"),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, "Start time must be HH:mm"),
   endTime: z.string().regex(/^\d{2}:\d{2}$/, "End time must be HH:mm"),

@@ -9,6 +9,7 @@ import ExamFilterTabs from "@/components/ExamFilterTabs";
 import CalendarView from "@/components/CalendarView";
 import ExamForm from "@/components/ExamForm";
 import AIAssistant from "@/components/AIAssistant";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export interface Exam {
   id: string;
@@ -16,6 +17,7 @@ export interface Exam {
   subject: string;
   examType: string;
   category: string;
+  semester: number;
   date: string;
   startTime: string;
   endTime: string;
@@ -74,19 +76,28 @@ export default function DashboardPage() {
     fetchExams();
   };
 
-  const filteredExams = exams.filter((e) => {
-    if (activeFilter === "All") return true;
-    if (activeFilter === "Regular" || activeFilter === "Backlog")
-      return e.category === activeFilter;
-    return e.examType === activeFilter;
-  });
+  const sortExams = (list: Exam[]) => {
+    return [...list].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+  };
+
+  const filteredExams = sortExams(
+    exams.filter((e) => {
+      if (activeFilter === "All") return true;
+      if (activeFilter === "Regular" || activeFilter === "Backlog")
+        return e.category === activeFilter;
+      return e.examType === activeFilter;
+    }),
+  );
 
   const nearest = exams
     .filter((e) => !e.completed && new Date(e.date) >= new Date())
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
   const calendarExams =
-    calendarMode === "filter" ? filteredExams : (exams as Exam[]);
+    calendarMode === "filter" ? filteredExams : sortExams(exams as Exam[]);
 
   return (
     <div
@@ -151,6 +162,7 @@ export default function DashboardPage() {
           >
             + Add Exam
           </button>
+          <ThemeToggle />
           <button
             onClick={handleLogout}
             className="btn-ghost"
