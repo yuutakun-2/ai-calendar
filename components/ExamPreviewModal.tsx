@@ -258,15 +258,12 @@ export default function ExamPreviewModal({
               <Row label="Semester" value={String(displayExam.semester)} />
               <Row
                 label="Date"
-                value={new Date(displayExam.date).toLocaleDateString(
-                  "en-US",
-                  {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  },
-                )}
+                value={new Date(displayExam.date).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
               />
               <div
                 style={{

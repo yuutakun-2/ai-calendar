@@ -1,587 +1,377 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Calendar, dateFnsLocalizer, View } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
-import { enUS } from "date-fns/locale";
-import "react-big-calendar/lib/css/react-big-calendar.css";
-
-interface Exam {
-  id: string;
-  code: string;
-  subject: string;
-  examType: string;
-  category: string;
-  date: string;
-  semester: number;
-  startTime: string;
-  endTime: string;
-  completed: boolean;
-}
+import { useState, useRef, useEffect } from "react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import type { Exam } from "@/app/dashboard/page";
+import { useTheme } from "@/components/ThemeToggle";
+import { THEMES } from "@/lib/themes";
 
 interface Props {
   exams: Exam[];
+  loading?: boolean;
   onEdit: (exam: Exam) => void;
   onDelete: (id: string) => void;
+  nearestExam?: Exam | null;
+  filteredExams?: Exam[];
 }
-
-const locales = {
-  "en-US": enUS,
-};
-
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek,
-  getDay,
-  locales,
-});
 
 export default function FullCalendarView({
   exams,
+  loading,
   onEdit,
   onDelete,
+  nearestExam,
+  filteredExams,
 }: Props) {
-  const [view, setView] = useState<View>("month");
-  const [dividerPos, setDividerPos] = useState(40);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<FullCalendar>(null);
+  const { theme: themeName } = useTheme();
+  const theme = THEMES[themeName as keyof typeof THEMES];
 
-  // Check if mobile
+  // Add CSS variables and theme styles
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+    if (typeof window !== "undefined") {
+      // Update CSS custom properties for FullCalendar
+      const root = document.documentElement;
+      root.style.setProperty("--fc-border-color", theme.border);
+      root.style.setProperty("--fc-bg-color", theme.bgCard);
+      root.style.setProperty("--fc-bg-secondary", theme.bgSecondary);
+      root.style.setProperty("--fc-text-color", theme.textPrimary);
+      root.style.setProperty("--fc-accent-color", theme.accent);
+      root.style.setProperty(
+        "--fc-today-bg",
+        themeName === "dark"
+          ? "rgba(139, 92, 246, 0.1)"
+          : "rgba(59, 130, 246, 0.1)",
+      );
 
-  // Convert exams to calendar events
-  const events = exams.map((exam) => ({
-    id: exam.id,
-    title: `${exam.subject} (${exam.examType})`,
-    start: new Date(`${exam.date}T${exam.startTime}`),
-    end: new Date(`${exam.date}T${exam.endTime}`),
-    resource: exam,
-  }));
+      // Add nearest exam highlight if available
+      if (nearestExam) {
+        const nearestDate = new Date(nearestExam.date)
+          .toISOString()
+          .split("T")[0];
+        root.style.setProperty(
+          "--fc-nearest-exam-bg",
+          themeName === "dark"
+            ? "rgba(34, 197, 94, 0.15)"
+            : "rgba(34, 197, 94, 0.1)",
+        );
+        root.style.setProperty("--fc-nearest-exam-border", theme.success);
+      }
 
-  // Handle dragging divider
-  const handleMouseDown = () => {
-    setIsDragging(true);
+      // Add filtered exam highlights if available
+      if (filteredExams && filteredExams.length > 0) {
+        root.style.setProperty(
+          "--fc-filtered-exam-bg",
+          themeName === "dark"
+            ? "rgba(59, 130, 246, 0.15)"
+            : "rgba(59, 130, 246, 0.1)",
+        );
+        root.style.setProperty("--fc-filtered-exam-border", theme.accent);
+      }
+
+      // Generate CSS for highlighted dates
+      let highlightCSS = "";
+
+      if (nearestExam) {
+        const nearestDate = new Date(nearestExam.date)
+          .toISOString()
+          .split("T")[0];
+        highlightCSS += `
+        .fc-daygrid-day[data-date="${nearestDate}"] {
+          background-color: var(--fc-nearest-exam-bg) !important;
+          border: 2px solid var(--fc-nearest-exam-border) !important;
+          position: relative !important;
+        }
+        
+        .fc-daygrid-day[data-date="${nearestDate}"]::before {
+          content: "🔥" !important;
+          position: absolute !important;
+          top: 2px !important;
+          right: 2px !important;
+          font-size: 12px !important;
+          z-index: 10 !important;
+        }`;
+      }
+
+      if (filteredExams && filteredExams.length > 0) {
+        const filteredDates = [
+          ...new Set(
+            filteredExams.map(
+              (exam) => new Date(exam.date).toISOString().split("T")[0],
+            ),
+          ),
+        ];
+
+        filteredDates.forEach((date) => {
+          // Skip if this is already the nearest exam (avoid double styling)
+          if (
+            nearestExam &&
+            date === new Date(nearestExam.date).toISOString().split("T")[0]
+          ) {
+            return;
+          }
+
+          highlightCSS += `
+        .fc-daygrid-day[data-date="${date}"] {
+          background-color: var(--fc-filtered-exam-bg) !important;
+          border: 1px solid var(--fc-filtered-exam-border) !important;
+          position: relative !important;
+        }`;
+        });
+      }
+
+      // Add spinner animation
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        /* FullCalendar theme overrides */
+        .fc-theme-standard .fc-scrollgrid {
+          border-color: var(--fc-border-color) !important;
+        }
+        
+        .fc-theme-standard td, .fc-theme-standard th {
+          border-color: var(--fc-border-color) !important;
+        }
+        
+        .fc-theme-standard .fc-daygrid-day-number {
+          color: var(--fc-text-color) !important;
+        }
+        
+        .fc-theme-standard .fc-col-header-cell {
+          background-color: var(--fc-bg-secondary) !important;
+          color: var(--fc-text-color) !important;
+        }
+        
+        .fc-theme-standard .fc-day-today {
+          background-color: var(--fc-today-bg) !important;
+        }
+        
+        /* Dynamic highlights */
+        ${highlightCSS}
+        
+        .fc-theme-standard .fc-button-primary {
+          background-color: var(--fc-accent-color) !important;
+          border-color: var(--fc-accent-color) !important;
+          color: white !important;
+        }
+        
+        .fc-theme-standard .fc-button-primary:hover {
+          opacity: 0.8 !important;
+        }
+        
+        .fc-theme-standard .fc-button-primary:disabled {
+          background-color: var(--fc-border-color) !important;
+          border-color: var(--fc-border-color) !important;
+          color: var(--fc-text-color) !important;
+          opacity: 0.5 !important;
+        }
+        
+        .fc-theme-standard .fc-toolbar-title {
+          color: var(--fc-text-color) !important;
+        }
+        
+        .fc-theme-standard .fc-more-link {
+          color: var(--fc-accent-color) !important;
+        }
+        
+        .fc-theme-standard .fc-popover {
+          background-color: var(--fc-bg-color) !important;
+          border: 1px solid var(--fc-border-color) !important;
+        }
+        
+        .fc-theme-standard .fc-popover-title {
+          background-color: var(--fc-bg-secondary) !important;
+          color: var(--fc-text-color) !important;
+        }
+        
+        .fc-theme-standard .fc-daygrid-event {
+          border-radius: 4px !important;
+        }
+      `;
+      style.setAttribute("data-calendar-styles", "true");
+      document.head.appendChild(style);
+
+      return () => {
+        style.remove();
+      };
+    }
+  }, [theme, themeName, nearestExam, filteredExams]);
+
+  // Convert exams to FullCalendar events
+  const events = exams.map((exam) => {
+    // Parse the ISO date and extract just the date part
+    const examDate = new Date(exam.date);
+    const dateStr = examDate.toISOString().split("T")[0]; // Get YYYY-MM-DD format
+
+    // Create proper datetime for FullCalendar
+    const startDate = new Date(`${dateStr}T${exam.startTime}`);
+    const endDate = new Date(`${dateStr}T${exam.endTime}`);
+
+    return {
+      id: exam.id,
+      title: `${exam.subject} (${exam.examType})`,
+      start: startDate,
+      end: endDate,
+      backgroundColor: exam.completed ? theme.success : theme.accent,
+      borderColor: exam.completed ? theme.success : theme.accent,
+      textColor: themeName === "dark" ? "white" : "black",
+      extendedProps: {
+        exam,
+      },
+    };
+  });
+
+  const handleEventClick = (info: any) => {
+    const exam = info.event.extendedProps.exam as Exam;
+    onEdit(exam);
   };
 
-  useEffect(() => {
-    if (!isDragging) return;
+  const handleEventMouseEnter = (info: any) => {
+    const exam = info.event.extendedProps.exam as Exam;
+    // Show tooltip or additional info on hover
+    info.el.style.cursor = "pointer";
+    info.el.style.opacity = "0.9";
+  };
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
-      const container = containerRef.current;
-      const rect = container.getBoundingClientRect();
-      const newPos = ((e.clientX - rect.left) / rect.width) * 100;
-      if (newPos > 25 && newPos < 75) {
-        setDividerPos(newPos);
-      }
-    };
+  const handleEventMouseLeave = (info: any) => {
+    info.el.style.opacity = "1";
+  };
 
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDragging]);
-
-  // Mobile view - stacked vertically
-  if (isMobile) {
+  const renderEventContent = (eventInfo: any) => {
+    const exam = eventInfo.event.extendedProps.exam;
     return (
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "20px",
-          height: "100%",
+          padding: "2px 4px",
+          fontSize: "0.85rem",
+          fontWeight: "500",
+          color: "white",
           overflow: "hidden",
         }}
       >
-        {/* Exam cards section */}
-        <div
-          style={{
-            height: "55%",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <h3
-            style={{
-              margin: "0 0 12px 0",
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              color: "var(--text-primary)",
-            }}
-          >
-            Upcoming Exams
-          </h3>
-          <div
-            style={{
-              flex: 1,
-              overflow: "hidden",
-              position: "relative",
-              background: "var(--bg-secondary)",
-              borderRadius: "12px",
-              padding: "12px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                maxHeight: "100%",
-                overflowY: "auto",
-              }}
-            >
-              {exams.map((exam, idx) => {
-                // Show 2 full cards and partial 3rd
-                let opacity = 1;
-                let maxHeight = "auto";
-                if (idx === 2) {
-                  opacity = 0.5;
-                  maxHeight = "50%";
-                } else if (idx > 2) {
-                  opacity = 0.3;
-                  maxHeight = "0px";
-                }
-
-                return (
-                  <div
-                    key={exam.id}
-                    style={{
-                      padding: "12px",
-                      background: "var(--bg-card)",
-                      border: `1px solid var(--border)`,
-                      borderRadius: "8px",
-                      opacity,
-                      maxHeight,
-                      overflow: "hidden",
-                      transition: "all 0.2s",
-                      pointerEvents: idx > 2 ? "none" : "auto",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "start",
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            fontSize: "0.9rem",
-                            fontWeight: 600,
-                            color: "var(--text-primary)",
-                          }}
-                        >
-                          {exam.subject}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "0.8rem",
-                            color: "var(--text-muted)",
-                            marginTop: "4px",
-                          }}
-                        >
-                          {exam.examType} • {exam.code}
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <button
-                          onClick={() => onEdit(exam)}
-                          style={{
-                            padding: "6px 10px",
-                            fontSize: "0.8rem",
-                            background: "var(--accent)",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => onDelete(exam.id)}
-                          style={{
-                            padding: "6px 10px",
-                            fontSize: "0.8rem",
-                            background: "var(--danger)",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {exams.length > 3 && (
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: "60px",
-                  background:
-                    "linear-gradient(to bottom, transparent, var(--bg-secondary))",
-                  pointerEvents: "none",
-                }}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Calendar section */}
-        <div
-          style={{
-            height: "45%",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              gap: "12px",
-              marginBottom: "12px",
-              justifyContent: "center",
-            }}
-          >
-            <button
-              onClick={() => setView("month")}
-              style={{
-                padding: "6px 16px",
-                fontSize: "0.85rem",
-                background: view === "month" ? "var(--accent)" : "var(--bg-card)",
-                color: view === "month" ? "white" : "var(--text-secondary)",
-                border: `1px solid ${view === "month" ? "var(--accent)" : "var(--border)"}`,
-                borderRadius: "6px",
-                cursor: "pointer",
-              }}
-            >
-              Month
-            </button>
-            <button
-              onClick={() => setView("week")}
-              style={{
-                padding: "6px 16px",
-                fontSize: "0.85rem",
-                background: view === "week" ? "var(--accent)" : "var(--bg-card)",
-                color: view === "week" ? "white" : "var(--text-secondary)",
-                border: `1px solid ${view === "week" ? "var(--accent)" : "var(--border)"}`,
-                borderRadius: "6px",
-                cursor: "pointer",
-              }}
-            >
-              Week
-            </button>
-          </div>
-          <div
-            style={{
-              flex: 1,
-              overflow: "auto",
-              background: "var(--bg-card)",
-              borderRadius: "12px",
-              border: "1px solid var(--border)",
-              padding: "12px",
-            }}
-          >
-            <Calendar
-              localizer={localizer}
-              events={events}
-              startAccessor="start"
-              endAccessor="end"
-              style={{
-                height: "100%",
-                color: "var(--text-primary)",
-              }}
-              view={view}
-              onView={setView}
-              views={["month", "week"]}
-              onSelectEvent={(event) => onEdit(event.resource)}
-              popup
-              toolbar={false}
-              eventPropGetter={() => ({
-                style: {
-                  backgroundColor: "var(--accent)",
-                  borderRadius: "4px",
-                  opacity: 0.8,
-                  color: "white",
-                  border: "none",
-                  display: "block",
-                },
-              })}
-            />
-          </div>
-        </div>
+        <div style={{ fontWeight: "600" }}>{eventInfo.event.title}</div>
       </div>
     );
-  }
+  };
 
-  // Desktop view - side by side with draggable divider
   return (
     <div
-      ref={containerRef}
       style={{
-        display: "flex",
         height: "100%",
-        gap: "0",
-        overflow: "hidden",
-        userSelect: isDragging ? "none" : "auto",
-        cursor: isDragging ? "col-resize" : "default",
+        background: theme.bgCard,
+        borderRadius: "12px",
+        border: `1px solid ${theme.border}`,
+        padding: "16px",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "500px",
       }}
     >
-      {/* Left panel - Exam cards */}
-      <div
-        style={{
-          width: `${dividerPos}%`,
-          overflow: "auto",
-          paddingRight: "12px",
-          borderRight: "1px solid var(--border)",
-        }}
-      >
-        <h3
-          style={{
-            margin: "0 0 16px 0",
-            fontSize: "1rem",
-            fontWeight: 600,
-            color: "var(--text-primary)",
-          }}
-        >
-          Exams ({exams.length})
-        </h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {exams.map((exam) => (
-            <div
-              key={exam.id}
-              style={{
-                padding: "14px",
-                background: "var(--bg-card)",
-                border: `1px solid var(--border)`,
-                borderRadius: "8px",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor =
-                  "var(--accent)";
-                (e.currentTarget as HTMLDivElement).style.background =
-                  "var(--bg-card-hover)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor =
-                  "var(--border)";
-                (e.currentTarget as HTMLDivElement).style.background =
-                  "var(--bg-card)";
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "start",
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: "0.95rem",
-                      fontWeight: 600,
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    {exam.subject}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.85rem",
-                      color: "var(--text-muted)",
-                      marginTop: "4px",
-                    }}
-                  >
-                    {exam.examType} • {exam.code}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.85rem",
-                      color: "var(--text-secondary)",
-                      marginTop: "6px",
-                    }}
-                  >
-                    {format(new Date(exam.date), "MMM d, yyyy")}
-                  </div>
-                  {exam.completed && (
-                    <div
-                      style={{
-                        display: "inline-block",
-                        marginTop: "6px",
-                        padding: "2px 8px",
-                        background: "var(--success)",
-                        color: "white",
-                        borderRadius: "4px",
-                        fontSize: "0.75rem",
-                        fontWeight: 500,
-                      }}
-                    >
-                      Completed
-                    </div>
-                  )}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <button
-                    onClick={() => onEdit(exam)}
-                    style={{
-                      padding: "6px 12px",
-                      fontSize: "0.8rem",
-                      background: "var(--accent)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => onDelete(exam.id)}
-                    style={{
-                      padding: "6px 12px",
-                      fontSize: "0.8rem",
-                      background: "var(--danger)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Draggable divider */}
-      <div
-        onMouseDown={handleMouseDown}
-        style={{
-          width: "2px",
-          background: isDragging ? "var(--accent)" : "var(--border)",
-          cursor: "col-resize",
-          transition: isDragging ? "none" : "background 0.2s",
-          flexShrink: 0,
-        }}
-      />
-
-      {/* Right panel - Calendar */}
-      <div
-        style={{
-          width: `${100 - dividerPos}%`,
-          overflow: "hidden",
-          paddingLeft: "12px",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      {loading ? (
         <div
           style={{
             display: "flex",
-            gap: "12px",
-            marginBottom: "16px",
             justifyContent: "center",
+            alignItems: "center",
+            height: "100%",
+            color: theme.textMuted,
           }}
         >
-          <button
-            onClick={() => setView("month")}
-            style={{
-              padding: "8px 20px",
-              fontSize: "0.9rem",
-              background: view === "month" ? "var(--accent)" : "var(--bg-card)",
-              color: view === "month" ? "white" : "var(--text-secondary)",
-              border: `1px solid ${view === "month" ? "var(--accent)" : "var(--border)"}`,
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: 500,
-            }}
-          >
-            Month
-          </button>
-          <button
-            onClick={() => setView("week")}
-            style={{
-              padding: "8px 20px",
-              fontSize: "0.9rem",
-              background: view === "week" ? "var(--accent)" : "var(--bg-card)",
-              color: view === "week" ? "white" : "var(--text-secondary)",
-              border: `1px solid ${view === "week" ? "var(--accent)" : "var(--border)"}`,
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: 500,
-            }}
-          >
-            Week
-          </button>
+          <div style={{ textAlign: "center" }}>
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                border: `3px solid ${theme.border}`,
+                borderTop: `3px solid ${theme.accent}`,
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+                margin: "0 auto 16px",
+              }}
+            />
+            Loading calendar...
+          </div>
         </div>
+      ) : events.length === 0 ? (
         <div
           style={{
-            flex: 1,
-            overflow: "auto",
-            background: "var(--bg-card)",
-            borderRadius: "12px",
-            border: "1px solid var(--border)",
-            padding: "12px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100%",
+            color: theme.textMuted,
           }}
         >
-          <Calendar
-            localizer={localizer}
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "3rem", marginBottom: "12px" }}>📅</div>
+            <p
+              style={{
+                fontSize: "1rem",
+                fontWeight: "600",
+                marginBottom: "8px",
+              }}
+            >
+              No exams scheduled
+            </p>
+            <p style={{ fontSize: "0.875rem", opacity: "0.8" }}>
+              Add your first exam to get started!
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div style={{ overflowY: "auto", flex: 1 }}>
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            headerToolbar={{
+              left: "prev,next today",
+              center: "title",
+              right: "dayGridMonth,timeGridWeek,timeGridDay",
+            }}
             events={events}
-            startAccessor="start"
-            endAccessor="end"
-            style={{ height: "100%", color: "var(--text-primary)" }}
-            view={view}
-            onView={setView}
-            views={["month", "week"]}
-            onSelectEvent={(event) => onEdit(event.resource)}
-            popup
-            toolbar={false}
-            eventPropGetter={() => ({
-              style: {
-                backgroundColor: "var(--accent)",
-                borderRadius: "4px",
-                opacity: 0.8,
-                color: "white",
-                border: "none",
-                display: "block",
-              },
-            })}
+            eventClick={handleEventClick}
+            eventMouseEnter={handleEventMouseEnter}
+            eventMouseLeave={handleEventMouseLeave}
+            eventContent={renderEventContent}
+            height="auto"
+            aspectRatio={1.5}
+            displayEventEnd={true}
+            dayMaxEvents={true}
+            moreLinkClick="popover"
+            weekends={true}
+            editable={false}
+            selectable={true}
+            selectMirror={true}
+            dayHeaderFormat={{ weekday: "short" }}
+            titleFormat={{
+              month: "long",
+              year: "numeric",
+            }}
+            buttonText={{
+              today: "Today",
+              month: "Month",
+              week: "Week",
+              day: "Day",
+            }}
+            eventDidMount={(info) => {
+              // Apply custom styles to ensure theme consistency
+              const el = info.el;
+              el.style.borderRadius = "6px";
+              el.style.border = "none";
+              el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+              el.style.transition = "all 0.2s ease";
+            }}
           />
         </div>
-      </div>
+      )}
     </div>
   );
 }

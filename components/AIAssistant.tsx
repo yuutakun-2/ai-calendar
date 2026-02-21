@@ -44,7 +44,7 @@ export default function AIAssistant({ onExamAdded }: Props) {
   const [fileLoading, setFileLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,7 +54,8 @@ export default function AIAssistant({ onExamAdded }: Props) {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const SpeechRecognition =
-        window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+        (window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.continuous = false;
@@ -69,7 +70,7 @@ export default function AIAssistant({ onExamAdded }: Props) {
           setIsListening(false);
         };
 
-        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        recognitionRef.current.onresult = (event: any) => {
           let transcript = "";
           for (let i = event.resultIndex; i < event.results.length; i++) {
             transcript += event.results[i][0].transcript;
@@ -364,12 +365,18 @@ export default function AIAssistant({ onExamAdded }: Props) {
               }}
               id="ai-input"
             />
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+            >
               <button
                 onClick={send}
                 disabled={loading || fileLoading || !input.trim()}
                 className="btn-primary"
-                style={{ width: "auto", padding: "10px 16px", minWidth: "60px" }}
+                style={{
+                  width: "auto",
+                  padding: "10px 16px",
+                  minWidth: "60px",
+                }}
                 id="ai-send-btn"
                 title="Send message"
               >
@@ -391,9 +398,7 @@ export default function AIAssistant({ onExamAdded }: Props) {
                 style={{
                   padding: "10px 16px",
                   fontSize: "0.85rem",
-                  background: isListening
-                    ? "var(--accent)"
-                    : "transparent",
+                  background: isListening ? "var(--accent)" : "transparent",
                   color: isListening ? "white" : "var(--text-secondary)",
                 }}
                 title={isListening ? "Stop listening" : "Start voice input"}

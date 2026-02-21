@@ -6,11 +6,11 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import NearestExamCard from "@/components/NearestExamCard";
 import ExamFilterTabs from "@/components/ExamFilterTabs";
-import CalendarView from "@/components/CalendarView";
 import FullCalendarView from "@/components/FullCalendarView";
 import ExamForm from "@/components/ExamForm";
 import AIAssistant from "@/components/AIAssistant";
-import ThemeToggle from "@/components/ThemeToggle";
+import ThemeToggle, { useTheme } from "@/components/ThemeToggle";
+import { THEMES } from "@/lib/themes";
 
 export interface Exam {
   id: string;
@@ -30,6 +30,8 @@ type CalendarMode = "all" | "nearest" | "filter";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { theme: themeName } = useTheme();
+  const theme = THEMES[themeName as keyof typeof THEMES];
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
@@ -37,6 +39,7 @@ export default function DashboardPage() {
   const [aiOpen, setAiOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const fetchExams = useCallback(async () => {
     try {
@@ -72,12 +75,18 @@ export default function DashboardPage() {
     fetchExams();
   }, [fetchExams]);
 
+  // Check if mobile for responsive layout
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const handleLogout = async () => {
     await axios.post("/api/auth/logout");
     router.push("/login");
   };
-
-
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this exam?")) return;
@@ -119,7 +128,9 @@ export default function DashboardPage() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(ellipse at top left, #150a2e 0%, var(--bg-primary) 50%)",
+          themeName === "dark"
+            ? "radial-gradient(ellipse at top left, #150a2e 0%, #0f0f23 50%)"
+            : "radial-gradient(ellipse at top left, #f8fafc 0%, #ffffff 50%)",
       }}
     >
       {/* Ambient glow */}
@@ -139,7 +150,7 @@ export default function DashboardPage() {
       {/* Navbar */}
       <nav
         style={{
-          borderBottom: "1px solid var(--border)",
+          borderBottom: `1px solid ${theme.border}`,
           padding: "16px 24px",
           display: "flex",
           alignItems: "center",
@@ -148,7 +159,10 @@ export default function DashboardPage() {
           position: "sticky",
           top: 0,
           zIndex: 50,
-          background: "rgba(10,10,15,0.85)",
+          background:
+            themeName === "dark"
+              ? "rgba(10,10,15,0.85)"
+              : "rgba(255,255,255,0.85)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -157,7 +171,10 @@ export default function DashboardPage() {
             style={{
               fontWeight: 700,
               fontSize: "1.1rem",
-              background: "linear-gradient(135deg, #f1f0ff, #a78bfa)",
+              background:
+                themeName === "dark"
+                  ? "linear-gradient(135deg, #f1f0ff, #a78bfa)"
+                  : "linear-gradient(135deg, #4c1d95, #7c3aed)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
@@ -171,8 +188,17 @@ export default function DashboardPage() {
               setEditingExam(null);
               setShowForm(true);
             }}
-            className="btn-primary"
-            style={{ width: "auto", padding: "9px 18px", fontSize: "0.875rem" }}
+            style={{
+              width: "auto",
+              padding: "9px 18px",
+              fontSize: "0.875rem",
+              background: theme.accent,
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "500",
+            }}
             id="add-exam-btn"
           >
             + Add Exam
@@ -180,8 +206,16 @@ export default function DashboardPage() {
           <ThemeToggle />
           <button
             onClick={handleLogout}
-            className="btn-ghost"
-            style={{ padding: "9px 16px", fontSize: "0.875rem" }}
+            style={{
+              padding: "9px 16px",
+              fontSize: "0.875rem",
+              background: "transparent",
+              color: theme.textPrimary,
+              border: `1px solid ${theme.border}`,
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "500",
+            }}
           >
             Logout
           </button>
@@ -220,8 +254,8 @@ export default function DashboardPage() {
                     textAlign: "left",
                     cursor: "pointer",
                     border: active
-                      ? "1px solid var(--border-hover)"
-                      : "1px solid var(--border)",
+                      ? `1px solid ${theme.accent}`
+                      : `1px solid ${theme.border}`,
                     background: active
                       ? "linear-gradient(135deg, rgba(139,92,246,0.16), rgba(109,40,217,0.10))"
                       : undefined,
@@ -246,7 +280,7 @@ export default function DashboardPage() {
                       </p>
                       <p
                         style={{
-                          color: "var(--text-muted)",
+                          color: theme.textMuted,
                           fontSize: "0.78rem",
                           marginTop: 2,
                         }}
@@ -299,15 +333,13 @@ export default function DashboardPage() {
                     padding: "16px",
                     marginBottom: "12px",
                     borderRadius: "16px",
-                    border: "1px solid var(--border)",
+                    border: `1px solid ${theme.border}`,
                   }}
                 >
                   <p style={{ fontWeight: 700, marginBottom: 6 }}>
                     Filter options
                   </p>
-                  <p
-                    style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}
-                  >
+                  <p style={{ color: theme.textMuted, fontSize: "0.85rem" }}>
                     Semester number and subject-based filtering will be added
                     next.
                   </p>
@@ -323,18 +355,254 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.15 }}
+          style={{
+            display: "flex",
+            gap: "20px",
+            height: isMobile ? "auto" : "600px",
+            flexDirection: isMobile ? "column" : "row",
+          }}
         >
-          {calendarMode === "all" ? (
-            <FullCalendarView
-              exams={calendarExams}
-              onEdit={(exam) => {
-                setEditingExam(exam);
-                setShowForm(true);
+          {/* Exam cards section */}
+          <div
+            style={{
+              width: isMobile ? "100%" : "350px",
+              flexShrink: 0,
+              display: "flex",
+              flexDirection: "column",
+              height: isMobile ? "300px" : "auto",
+            }}
+          >
+            <h3
+              style={{
+                margin: "0 0 16px 0",
+                fontSize: "1rem",
+                fontWeight: 600,
+                color: theme.textPrimary,
               }}
-              onDelete={handleDelete}
-            />
-          ) : (
-            <CalendarView
+            >
+              {calendarMode === "nearest"
+                ? "Nearest Exam"
+                : calendarMode === "filter"
+                  ? "Filtered Exams"
+                  : `All Exams (${calendarExams.length})`}
+            </h3>
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                background: theme.bgCard,
+                borderRadius: "12px",
+                border: `1px solid ${theme.border}`,
+                padding: "16px",
+              }}
+            >
+              {calendarMode === "nearest" && nearest ? (
+                <div
+                  style={{
+                    padding: "16px",
+                    background: theme.bgSecondary,
+                    borderRadius: "8px",
+                    border: `2px solid ${theme.accent}`,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "1rem",
+                      fontWeight: 600,
+                      color: theme.textPrimary,
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {nearest.subject}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.85rem",
+                      color: theme.textMuted,
+                      marginBottom: "4px",
+                    }}
+                  >
+                    {nearest.examType} • {nearest.code}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.85rem",
+                      color: theme.textSecondary,
+                      marginBottom: "12px",
+                    }}
+                  >
+                    📅 {new Date(nearest.date).toLocaleDateString()}{" "}
+                    &nbsp;·&nbsp; 🕐 {nearest.startTime} – {nearest.endTime}
+                  </div>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => {
+                        setEditingExam(nearest);
+                        setShowForm(true);
+                      }}
+                      className="btn-primary"
+                      style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(nearest.id)}
+                      className="btn-danger"
+                      style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                  }}
+                >
+                  {calendarExams.map((exam) => (
+                    <div
+                      key={exam.id}
+                      style={{
+                        padding: "14px",
+                        background: theme.bgSecondary,
+                        border: `1px solid ${theme.border}`,
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLDivElement).style.borderColor =
+                          theme.accent;
+                        (e.currentTarget as HTMLDivElement).style.background =
+                          theme.bgCard;
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLDivElement).style.borderColor =
+                          theme.border;
+                        (e.currentTarget as HTMLDivElement).style.background =
+                          theme.bgSecondary;
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "start",
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              fontSize: "0.95rem",
+                              fontWeight: 600,
+                              color: exam.completed
+                                ? theme.textMuted
+                                : theme.textPrimary,
+                              textDecoration: exam.completed
+                                ? "line-through"
+                                : "none",
+                            }}
+                          >
+                            {exam.subject}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "0.85rem",
+                              color: theme.textMuted,
+                              marginTop: "4px",
+                            }}
+                          >
+                            {exam.examType} • {exam.code}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "0.85rem",
+                              color: theme.textSecondary,
+                              marginTop: "6px",
+                            }}
+                          >
+                            📅 {new Date(exam.date).toLocaleDateString()}{" "}
+                            &nbsp;·&nbsp; 🕐 {exam.startTime} – {exam.endTime}
+                          </div>
+                          {exam.completed && (
+                            <div
+                              style={{
+                                display: "inline-block",
+                                marginTop: "6px",
+                                padding: "2px 8px",
+                                background: theme.success,
+                                color: "white",
+                                borderRadius: "4px",
+                                fontSize: "0.75rem",
+                                fontWeight: 500,
+                              }}
+                            >
+                              Completed
+                            </div>
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px",
+                          }}
+                        >
+                          <button
+                            onClick={() => {
+                              setEditingExam(exam);
+                              setShowForm(true);
+                            }}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: "0.8rem",
+                              background: theme.accent,
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              whiteSpace: "normal",
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(exam.id)}
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: "0.8rem",
+                              background: theme.danger,
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Calendar section */}
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              height: isMobile ? "400px" : "auto",
+            }}
+          >
+            <FullCalendarView
               exams={calendarExams}
               loading={loading}
               onEdit={(exam) => {
@@ -342,13 +610,12 @@ export default function DashboardPage() {
                 setShowForm(true);
               }}
               onDelete={handleDelete}
-              onToggleComplete={() => {}}
-              highlightExamId={
-                calendarMode === "nearest" ? nearest?.id : undefined
+              nearestExam={calendarMode === "nearest" ? nearest : null}
+              filteredExams={
+                calendarMode === "filter" ? filteredExams : undefined
               }
-              dimOthers={calendarMode === "nearest"}
             />
-          )}
+          </div>
         </motion.div>
       </main>
 
@@ -363,7 +630,7 @@ export default function DashboardPage() {
           width: 56,
           height: 56,
           borderRadius: 16,
-          border: "1px solid var(--border-hover)",
+          border: `1px solid ${theme.accent}`,
           background:
             "linear-gradient(135deg, rgba(139,92,246,0.9), rgba(109,40,217,0.85))",
           color: "white",
