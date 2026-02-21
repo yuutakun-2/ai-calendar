@@ -27,6 +27,17 @@ export const ExamSchema = z.object({
 export const AIMessageSchema = z.object({
   message: z.string().min(1, "Message is required"),
   gatheredFields: z.record(z.string(), z.unknown()).optional(),
+  examDates: z
+    .array(
+      z.object({
+        date: z.string(),
+        fields: z.record(z.string(), z.unknown()),
+        missingFields: z.array(z.string()),
+        isConfirmed: z.boolean(),
+      }),
+    )
+    .optional(),
+  file: z.any().optional(),
 });
 
 export type RegisterInput = z.infer<typeof RegisterSchema>;

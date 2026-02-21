@@ -152,14 +152,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { message, gatheredFields } = parsed.data;
+    const { message, examDates, file } = parsed.data;
 
     // Server-side heuristic check: if message is clearly not exam-related
-    // AND there are no gathered fields (i.e. not in the middle of a conversation)
-    if (
-      !looksExamRelated(message) &&
-      (!gatheredFields || Object.keys(gatheredFields).length === 0)
-    ) {
+    // AND there are no exam dates (i.e. not in the middle of a conversation)
+    if (!looksExamRelated(message) && (!examDates || examDates.length === 0)) {
       return NextResponse.json({
         status: "off_topic",
         message:
@@ -167,10 +164,17 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Build context from already gathered fields
+    // Build context from already gathered exam dates
     const fieldContext =
-      gatheredFields && Object.keys(gatheredFields).length > 0
-        ? `\nAlready gathered fields: ${JSON.stringify(gatheredFields)}`
+      examDates && examDates.length > 0
+        ? `\nAlready gathered exam dates: ${JSON.stringify(
+            examDates.map((ed) => ({
+              date: ed.date,
+              fields: ed.fields,
+              missingFields: ed.missingFields,
+              isConfirmed: ed.isConfirmed,
+            })),
+          )}`
         : "";
 
     const prompt = `${SYSTEM_PROMPT}${fieldContext}\n\nUser message: ${message}`;
@@ -226,17 +230,50 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Validate the AI response structure
-    const validated = validateAIResponse(json);
-    if (!validated) {
-      console.error("[AI_ROUTE] AI response failed validation:", json);
+    // Handle different response types
+    if (json.status === "off_topic") {
       return NextResponse.json({
-        status: "error",
-        message: "AI returned an invalid response format. Please try again.",
+        status: "off_topic",
+        message:
+          (json.message as string) ||
+          "I can only help you manage your exam schedule. Please describe an exam you'd like to add or manage.",
       });
+    } else if (json.status === "incomplete") {
+      // Handle incomplete response with missing fields
+      return NextResponse.json({
+        status: "incomplete",
+        message:
+          json.message || "I need more information to process your request.",
+        examDates: json.examDates || [],
+      });
+    } else if (json.status === "complete") {
+      // Handle complete response with confirmed exam
+      if (json.examDates && Array.isArray(json.examDates)) {
+        return NextResponse.json({
+          status: "complete",
+          message:
+            json.message || "Exam confirmed and ready to add to calendar.",
+          examDates: json.examDates,
+        });
+      } else {
+        // Handle single exam case (backward compatibility)
+        const validated = validateAIResponse(json);
+        if (validated) {
+          return NextResponse.json({
+            status: "complete",
+            data: validated.data,
+            message: "Exam confirmed and ready to add to calendar.",
+          });
+        }
+      }
     }
 
-    return NextResponse.json(validated);
+    return NextResponse.json({
+      status: "error",
+      message:
+        json.message ||
+        "AI returned an invalid response format. Please try again.",
+    });
   } catch (error) {
     console.error("[AI_ROUTE]", error);
     return NextResponse.json({ error: "AI service error" }, { status: 500 });
