@@ -211,6 +211,8 @@ export default function DashboardPage() {
                       ? "linear-gradient(135deg, rgba(139,92,246,0.16), rgba(109,40,217,0.10))"
                       : undefined,
                     transition: "all 0.15s",
+                    position: "relative",
+                    zIndex: 5,
                   }}
                 >
                   <div

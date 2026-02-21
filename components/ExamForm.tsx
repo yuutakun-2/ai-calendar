@@ -83,9 +83,15 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
     color: "var(--text-primary)",
     fontSize: "0.9rem",
     outline: "none",
+    position: "relative" as const,
+    zIndex: 10,
   });
 
-  const selectStyle = { ...inputStyle(false), appearance: "none" as const };
+  const selectStyle = {
+    ...inputStyle(false),
+    appearance: "none" as const,
+    cursor: "pointer" as const,
+  };
 
   return (
     <motion.div
@@ -226,7 +232,7 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
           <div style={{ marginBottom: "16px" }}>
             <label className="field-label">Semester</label>
             <input
-              {...register("semester")}
+              {...register("semester", { valueAsNumber: true })}
               type="number"
               min="1"
               placeholder="e.g. 1"

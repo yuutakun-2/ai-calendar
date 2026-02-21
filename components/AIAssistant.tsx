@@ -16,6 +16,7 @@ interface ExamData {
   examType: string;
   category: string;
   date: string;
+  semester: number;
   startTime: string;
   endTime: string;
 }

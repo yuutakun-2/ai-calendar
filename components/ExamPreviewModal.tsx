@@ -9,6 +9,7 @@ interface ExamData {
   subject: string;
   examType: string;
   category: string;
+  semester: number;
   date: string;
   startTime: string;
   endTime: string;
@@ -134,6 +135,7 @@ export default function ExamPreviewModal({
           <Row label="Subject" value={exam.subject} />
           <Row label="Exam Type" value={exam.examType} />
           <Row label="Category" value={exam.category} />
+          <Row label="Semester" value={String(exam.semester)} />
           <Row
             label="Date"
             value={new Date(exam.date).toLocaleDateString("en-US", {
@@ -205,14 +207,20 @@ export default function ExamPreviewModal({
         )}
 
         <div style={{ display: "flex", gap: "10px" }}>
-          <button onClick={onEdit} className="btn-ghost" style={{ flex: 1 }}>
-            ✏️ Edit
+          <button
+            onClick={onEdit}
+            className="btn-ghost"
+            style={{ flex: 1 }}
+            data-testid="exam-preview-edit-btn"
+          >
+            Edit
           </button>
           <button
             onClick={handleConfirm}
             className="btn-primary"
             disabled={saving}
             style={{ flex: 2 }}
+            data-testid="exam-preview-confirm-btn"
           >
             {saving ? (
               <>
