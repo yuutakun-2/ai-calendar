@@ -698,11 +698,10 @@ export default function AIAssistant({ onExamAdded }: Props) {
                     ? `Describe details for exam on ${getCurrentExam()?.date} (e.g., 'Math exam on March 15')`
                     : "Describe your exam (e.g., 'Math exam on March 15, 9:00 AM')"
               }
-              disabled={loading || fileLoading || examDates.length > 0}
+              disabled={loading || fileLoading}
               style={{
                 flex: 1,
-                opacity:
-                  loading || fileLoading || examDates.length > 0 ? 0.6 : 1,
+                opacity: loading || fileLoading ? 0.6 : 1,
                 minHeight: "80px",
                 resize: "vertical",
                 fontFamily: "inherit",
@@ -719,12 +718,7 @@ export default function AIAssistant({ onExamAdded }: Props) {
             >
               <button
                 onClick={send}
-                disabled={
-                  loading ||
-                  fileLoading ||
-                  !input.trim() ||
-                  examDates.length > 0
-                }
+                disabled={loading || fileLoading || !input.trim()}
                 style={{
                   width: "auto",
                   padding: "10px 16px",
@@ -734,27 +728,20 @@ export default function AIAssistant({ onExamAdded }: Props) {
                   border: "none",
                   borderRadius: "6px",
                   cursor:
-                    loading ||
-                    fileLoading ||
-                    !input.trim() ||
-                    examDates.length > 0
+                    loading || fileLoading || !input.trim()
                       ? "not-allowed"
                       : "pointer",
                   fontSize: "0.9rem",
                   fontWeight: 500,
                 }}
                 id="ai-send-btn"
-                title={
-                  examDates.length > 0
-                    ? "Complete current exams first"
-                    : "Send message"
-                }
+                title="Send message"
               >
-                {loading ? <span className="spinner" /> : "Send"}
+                {loading ? "Sending..." : "Send"}
               </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={loading || fileLoading || examDates.length > 0}
+                disabled={loading || fileLoading}
                 style={{
                   padding: "10px 16px",
                   fontSize: "0.85rem",
@@ -762,22 +749,15 @@ export default function AIAssistant({ onExamAdded }: Props) {
                   color: theme.textSecondary,
                   border: `1px solid ${theme.border}`,
                   borderRadius: "6px",
-                  cursor:
-                    loading || fileLoading || examDates.length > 0
-                      ? "not-allowed"
-                      : "pointer",
+                  cursor: loading || fileLoading ? "not-allowed" : "pointer",
                 }}
-                title={
-                  examDates.length > 0
-                    ? "Complete current exams first"
-                    : "Upload file (PDF, image, text)"
-                }
+                title="Upload file (PDF, image, text)"
               >
                 {fileLoading ? <span className="spinner" /> : "📎 File"}
               </button>
               <button
                 onClick={toggleVoiceInput}
-                disabled={loading || fileLoading || examDates.length > 0}
+                disabled={loading || fileLoading}
                 style={{
                   padding: "10px 16px",
                   fontSize: "0.85rem",
@@ -785,18 +765,9 @@ export default function AIAssistant({ onExamAdded }: Props) {
                   color: isListening ? "white" : theme.textSecondary,
                   border: `1px solid ${theme.border}`,
                   borderRadius: "6px",
-                  cursor:
-                    loading || fileLoading || examDates.length > 0
-                      ? "not-allowed"
-                      : "pointer",
+                  cursor: loading || fileLoading ? "not-allowed" : "pointer",
                 }}
-                title={
-                  examDates.length > 0
-                    ? "Complete current exams first"
-                    : isListening
-                      ? "Stop listening"
-                      : "Start voice input"
-                }
+                title={isListening ? "Stop listening" : "Start voice input"}
               >
                 {isListening ? "🎤 Stop" : "🎤 Voice"}
               </button>
