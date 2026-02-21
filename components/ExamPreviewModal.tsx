@@ -20,6 +20,9 @@ interface Props {
   onConfirm: () => void;
   onEdit: () => void;
   onClose: () => void;
+  isMultiple?: boolean;
+  currentIndex?: number;
+  totalCount?: number;
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -61,15 +64,20 @@ export default function ExamPreviewModal({
   onConfirm,
   onEdit,
   onClose,
+  isMultiple = false,
+  currentIndex = 1,
+  totalCount = 1,
 }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedExam, setEditedExam] = useState<ExamData>(exam);
 
   const handleConfirm = async () => {
     setSaving(true);
     setError("");
     try {
-      await axios.post("/api/exams", exam);
+      await axios.post("/api/exams", isEditing ? editedExam : exam);
       onConfirm();
     } catch {
       setError("Failed to save exam. Please try again.");
@@ -77,6 +85,8 @@ export default function ExamPreviewModal({
       setSaving(false);
     }
   };
+
+  const displayExam = isEditing ? editedExam : exam;
 
   return (
     <motion.div
@@ -108,7 +118,7 @@ export default function ExamPreviewModal({
         <div style={{ textAlign: "center", marginBottom: "20px" }}>
           <div style={{ fontSize: "2.5rem", marginBottom: "8px" }}>✨</div>
           <h2 style={{ fontWeight: 700, fontSize: "1.2rem" }}>
-            Confirm Exam Details
+            {isEditing ? "Edit Exam Details" : "Confirm Exam Details"}
           </h2>
           <p
             style={{
@@ -117,54 +127,171 @@ export default function ExamPreviewModal({
               marginTop: "4px",
             }}
           >
-            Review and confirm before saving
+            {isMultiple
+              ? `Exam ${currentIndex} of ${totalCount}`
+              : isEditing
+                ? "Make changes as needed"
+                : "Review and confirm before saving"}
           </p>
         </div>
 
-        {/* Exam data preview */}
+        {/* Exam data preview/edit */}
         <div
           style={{
-            background: "rgba(139,92,246,0.06)",
+            background: "rgba(14,165,233,0.06)",
             borderRadius: "12px",
             padding: "4px 16px",
             border: "1px solid var(--border)",
             marginBottom: "20px",
           }}
         >
-          <Row label="Subject Code" value={exam.code} />
-          <Row label="Subject" value={exam.subject} />
-          <Row label="Exam Type" value={exam.examType} />
-          <Row label="Category" value={exam.category} />
-          <Row label="Semester" value={String(exam.semester)} />
-          <Row
-            label="Date"
-            value={new Date(exam.date).toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          />
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "10px 0",
-            }}
-          >
-            <span style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
-              Time
-            </span>
-            <span
-              style={{
-                color: "var(--text-primary)",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-              }}
-            >
-              {exam.startTime} – {exam.endTime}
-            </span>
-          </div>
+          {isEditing ? (
+            <div style={{ display: "grid", gap: "12px", paddingTop: "12px" }}>
+              <div>
+                <label className="field-label">Subject Code</label>
+                <input
+                  type="text"
+                  value={editedExam.code}
+                  onChange={(e) =>
+                    setEditedExam({ ...editedExam, code: e.target.value })
+                  }
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="field-label">Subject</label>
+                <input
+                  type="text"
+                  value={editedExam.subject}
+                  onChange={(e) =>
+                    setEditedExam({ ...editedExam, subject: e.target.value })
+                  }
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="field-label">Exam Type</label>
+                <select
+                  value={editedExam.examType}
+                  onChange={(e) =>
+                    setEditedExam({ ...editedExam, examType: e.target.value })
+                  }
+                  className="input-field"
+                >
+                  <option>Mid Term</option>
+                  <option>End Term</option>
+                  <option>CA</option>
+                  <option>Lab</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="field-label">Category</label>
+                <select
+                  value={editedExam.category}
+                  onChange={(e) =>
+                    setEditedExam({ ...editedExam, category: e.target.value })
+                  }
+                  className="input-field"
+                >
+                  <option>Regular</option>
+                  <option>Backlog</option>
+                </select>
+              </div>
+              <div>
+                <label className="field-label">Semester</label>
+                <input
+                  type="number"
+                  value={editedExam.semester}
+                  onChange={(e) =>
+                    setEditedExam({
+                      ...editedExam,
+                      semester: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="field-label">Date</label>
+                <input
+                  type="date"
+                  value={editedExam.date}
+                  onChange={(e) =>
+                    setEditedExam({ ...editedExam, date: e.target.value })
+                  }
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="field-label">Start Time</label>
+                <input
+                  type="time"
+                  value={editedExam.startTime}
+                  onChange={(e) =>
+                    setEditedExam({
+                      ...editedExam,
+                      startTime: e.target.value,
+                    })
+                  }
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="field-label">End Time</label>
+                <input
+                  type="time"
+                  value={editedExam.endTime}
+                  onChange={(e) =>
+                    setEditedExam({ ...editedExam, endTime: e.target.value })
+                  }
+                  className="input-field"
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <Row label="Subject Code" value={displayExam.code} />
+              <Row label="Subject" value={displayExam.subject} />
+              <Row label="Exam Type" value={displayExam.examType} />
+              <Row label="Category" value={displayExam.category} />
+              <Row label="Semester" value={String(displayExam.semester)} />
+              <Row
+                label="Date"
+                value={new Date(displayExam.date).toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  },
+                )}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "10px 0",
+                }}
+              >
+                <span
+                  style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}
+                >
+                  Time
+                </span>
+                <span
+                  style={{
+                    color: "var(--text-primary)",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  {displayExam.startTime} – {displayExam.endTime}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Type color indicator */}
@@ -207,30 +334,62 @@ export default function ExamPreviewModal({
         )}
 
         <div style={{ display: "flex", gap: "10px" }}>
-          <button
-            onClick={onEdit}
-            className="btn-ghost"
-            style={{ flex: 1 }}
-            data-testid="exam-preview-edit-btn"
-          >
-            Edit
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="btn-primary"
-            disabled={saving}
-            style={{ flex: 2 }}
-            data-testid="exam-preview-confirm-btn"
-          >
-            {saving ? (
-              <>
-                <span className="spinner" />
-                Saving…
-              </>
-            ) : (
-              "✅ Confirm & Add"
-            )}
-          </button>
+          {isEditing ? (
+            <>
+              <button
+                onClick={() => setIsEditing(false)}
+                className="btn-ghost"
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="btn-primary"
+                disabled={saving}
+                style={{ flex: 2 }}
+                data-testid="exam-preview-confirm-btn"
+              >
+                {saving ? (
+                  <>
+                    <span className="spinner" />
+                    Saving…
+                  </>
+                ) : (
+                  "✅ Save Changes"
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="btn-ghost"
+                style={{ flex: 1 }}
+                data-testid="exam-preview-edit-btn"
+              >
+                ✏️ Edit
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="btn-primary"
+                disabled={saving}
+                style={{ flex: 2 }}
+                data-testid="exam-preview-confirm-btn"
+              >
+                {saving ? (
+                  <>
+                    <span className="spinner" />
+                    Saving…
+                  </>
+                ) : isMultiple ? (
+                  `✅ Confirm (${currentIndex}/${totalCount})`
+                ) : (
+                  "✅ Confirm & Add"
+                )}
+              </button>
+            </>
+          )}
         </div>
       </motion.div>
     </motion.div>

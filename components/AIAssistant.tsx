@@ -29,20 +29,60 @@ export default function AIAssistant({ onExamAdded }: Props) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      text: "Hi! I'm your exam assistant 🎓 Describe an exam you want to add and I'll extract the details for you. I'll ask if anything is missing!",
+      text: "Hi! I'm your exam assistant 🎓 Describe an exam, upload a file (PDF/image), or use voice input to tell me about your exams. I'll extract the details for you!",
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [gatheredFields, setGatheredFields] = useState<Record<string, string>>(
     {},
   );
-  const [previewExam, setPreviewExam] = useState<ExamData | null>(null);
+  const [previewExams, setPreviewExams] = useState<ExamData[]>([]);
+  const [currentExamIndex, setCurrentExamIndex] = useState(0);
+  const [fileLoading, setFileLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition =
+        window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.language = "en-US";
+
+        recognitionRef.current.onstart = () => {
+          setIsListening(true);
+        };
+
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+        };
+
+        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+          let transcript = "";
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+          }
+          setInput(transcript);
+        };
+
+        recognitionRef.current.onerror = () => {
+          setIsListening(false);
+        };
+      }
+    }
+  }, []);
 
   const send = async () => {
     const msg = input.trim();
@@ -69,15 +109,21 @@ export default function AIAssistant({ onExamAdded }: Props) {
           { role: "assistant", text: data.message },
         ]);
       } else if (data.status === "complete") {
+        // Handle single or multiple exams
+        const exams = Array.isArray(data.data) ? data.data : [data.data];
+        setPreviewExams(exams);
+        setCurrentExamIndex(0);
         setGatheredFields({});
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            text: "Perfect! Here's what I've extracted. Please review and confirm:",
+            text:
+              exams.length > 1
+                ? `Perfect! I found ${exams.length} exams. Let's review them one by one.`
+                : "Perfect! Here's what I've extracted. Please review and confirm:",
           },
         ]);
-        setPreviewExam(data.data);
       } else {
         setMessages((prev) => [
           ...prev,
@@ -94,6 +140,79 @@ export default function AIAssistant({ onExamAdded }: Props) {
       ]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file || fileLoading) return;
+
+    setFileLoading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const msg = `Please extract exam details from this file: ${file.name}`;
+      setMessages((prev) => [...prev, { role: "user", text: msg }]);
+      setInput("");
+
+      const { data } = await axios.post("/api/ai", {
+        message: msg,
+        gatheredFields,
+        file: file,
+      });
+
+      if (data.status === "complete") {
+        const exams = Array.isArray(data.data) ? data.data : [data.data];
+        setPreviewExams(exams);
+        setCurrentExamIndex(0);
+        setGatheredFields({});
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text:
+              exams.length > 1
+                ? `Found ${exams.length} exams in your file. Let's review them.`
+                : "Extracted exam details from your file. Please confirm:",
+          },
+        ]);
+      } else if (data.status === "incomplete") {
+        if (data.gathered)
+          setGatheredFields((prev) => ({ ...prev, ...data.gathered }));
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", text: data.message },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "error",
+            text: data.message || "Failed to process file. Please try again.",
+          },
+        ]);
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "error", text: "Error uploading file. Please try again." },
+      ]);
+    } finally {
+      setFileLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const toggleVoiceInput = () => {
+    if (!recognitionRef.current) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.start();
     }
   };
 
@@ -220,53 +339,113 @@ export default function AIAssistant({ onExamAdded }: Props) {
             padding: "16px 20px",
             borderTop: "1px solid var(--border)",
             display: "flex",
-            gap: "10px",
+            flexDirection: "column",
+            gap: "12px",
           }}
         >
+          <div style={{ display: "flex", gap: "10px" }}>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={
+                loading
+                  ? "AI is thinking…"
+                  : "Describe your exam… (e.g. 'Math exam on March 10')"
+              }
+              disabled={loading || fileLoading}
+              className="input-field"
+              style={{
+                flex: 1,
+                opacity: loading || fileLoading ? 0.6 : 1,
+                minHeight: "80px",
+                resize: "vertical",
+                fontFamily: "inherit",
+              }}
+              id="ai-input"
+            />
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <button
+                onClick={send}
+                disabled={loading || fileLoading || !input.trim()}
+                className="btn-primary"
+                style={{ width: "auto", padding: "10px 16px", minWidth: "60px" }}
+                id="ai-send-btn"
+                title="Send message"
+              >
+                {loading ? <span className="spinner" /> : "Send"}
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading || fileLoading}
+                className="btn-ghost"
+                style={{ padding: "10px 16px", fontSize: "0.85rem" }}
+                title="Upload file (PDF, image, text)"
+              >
+                {fileLoading ? <span className="spinner" /> : "📎 File"}
+              </button>
+              <button
+                onClick={toggleVoiceInput}
+                disabled={loading || fileLoading}
+                className={`btn-ghost ${isListening ? "btn-primary" : ""}`}
+                style={{
+                  padding: "10px 16px",
+                  fontSize: "0.85rem",
+                  background: isListening
+                    ? "var(--accent)"
+                    : "transparent",
+                  color: isListening ? "white" : "var(--text-secondary)",
+                }}
+                title={isListening ? "Stop listening" : "Start voice input"}
+              >
+                {isListening ? "🎤 Stop" : "🎤 Voice"}
+              </button>
+            </div>
+          </div>
           <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              loading
-                ? "AI is thinking…"
-                : "Describe your exam… (e.g. 'Math exam on March 10')"
-            }
-            disabled={loading}
-            className="input-field"
-            style={{ flex: 1, opacity: loading ? 0.6 : 1 }}
-            id="ai-input"
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.txt,.doc,.docx"
+            onChange={handleFileUpload}
+            style={{ display: "none" }}
+            id="file-input"
           />
-          <button
-            onClick={send}
-            disabled={loading || !input.trim()}
-            className="btn-primary"
-            style={{ width: "auto", padding: "10px 20px", flexShrink: 0 }}
-            id="ai-send-btn"
-          >
-            {loading ? <span className="spinner" /> : "Send"}
-          </button>
         </div>
       </div>
 
       {/* Preview Modal */}
       <AnimatePresence>
-        {previewExam && (
+        {previewExams.length > 0 && (
           <ExamPreviewModal
-            exam={previewExam}
+            exam={previewExams[currentExamIndex]}
+            isMultiple={previewExams.length > 1}
+            currentIndex={currentExamIndex + 1}
+            totalCount={previewExams.length}
             onConfirm={() => {
-              setPreviewExam(null);
+              const newIndex = currentExamIndex + 1;
               onExamAdded();
-              setMessages((prev) => [
-                ...prev,
-                {
-                  role: "assistant",
-                  text: "✅ Exam added successfully! You can see it in the Calendar tab.",
-                },
-              ]);
+              if (newIndex < previewExams.length) {
+                setCurrentExamIndex(newIndex);
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    role: "assistant",
+                    text: `Exam ${newIndex} confirmed! Let's review exam ${newIndex + 1}.`,
+                  },
+                ]);
+              } else {
+                setPreviewExams([]);
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    role: "assistant",
+                    text: `✅ All ${previewExams.length} exams added successfully! You can see them in the Calendar tab.`,
+                  },
+                ]);
+              }
             }}
-            onEdit={() => setPreviewExam(null)}
-            onClose={() => setPreviewExam(null)}
+            onEdit={() => setPreviewExams([])}
+            onClose={() => setPreviewExams([])}
           />
         )}
       </AnimatePresence>

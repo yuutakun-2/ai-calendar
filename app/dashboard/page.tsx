@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import NearestExamCard from "@/components/NearestExamCard";
 import ExamFilterTabs from "@/components/ExamFilterTabs";
 import CalendarView from "@/components/CalendarView";
+import FullCalendarView from "@/components/FullCalendarView";
 import ExamForm from "@/components/ExamForm";
 import AIAssistant from "@/components/AIAssistant";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -40,7 +41,26 @@ export default function DashboardPage() {
   const fetchExams = useCallback(async () => {
     try {
       const { data } = await axios.get("/api/exams");
-      setExams(data.exams);
+      // Auto-mark exams as complete if current time is past endTime
+      const now = new Date();
+      const examsWithAutoComplete = await Promise.all(
+        data.exams.map(async (exam: Exam) => {
+          if (!exam.completed) {
+            const examDateTime = new Date(`${exam.date}T${exam.endTime}`);
+            if (now > examDateTime) {
+              // Auto-complete the exam
+              try {
+                await axios.patch(`/api/exams/${exam.id}/complete`);
+                return { ...exam, completed: true };
+              } catch {
+                return exam;
+              }
+            }
+          }
+          return exam;
+        }),
+      );
+      setExams(examsWithAutoComplete);
     } catch {
       router.push("/login");
     } finally {
@@ -57,12 +77,7 @@ export default function DashboardPage() {
     router.push("/login");
   };
 
-  const handleToggleComplete = async (id: string) => {
-    await axios.patch(`/api/exams/${id}/complete`);
-    setExams((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, completed: !e.completed } : e)),
-    );
-  };
+
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this exam?")) return;
@@ -309,20 +324,31 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.15 }}
         >
-          <CalendarView
-            exams={calendarExams}
-            loading={loading}
-            onEdit={(exam) => {
-              setEditingExam(exam);
-              setShowForm(true);
-            }}
-            onDelete={handleDelete}
-            onToggleComplete={handleToggleComplete}
-            highlightExamId={
-              calendarMode === "nearest" ? nearest?.id : undefined
-            }
-            dimOthers={calendarMode === "nearest"}
-          />
+          {calendarMode === "all" ? (
+            <FullCalendarView
+              exams={calendarExams}
+              onEdit={(exam) => {
+                setEditingExam(exam);
+                setShowForm(true);
+              }}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <CalendarView
+              exams={calendarExams}
+              loading={loading}
+              onEdit={(exam) => {
+                setEditingExam(exam);
+                setShowForm(true);
+              }}
+              onDelete={handleDelete}
+              onToggleComplete={() => {}}
+              highlightExamId={
+                calendarMode === "nearest" ? nearest?.id : undefined
+              }
+              dimOthers={calendarMode === "nearest"}
+            />
+          )}
         </motion.div>
       </main>
 

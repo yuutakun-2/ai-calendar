@@ -113,34 +113,28 @@ export default function CalendarView({
                   opacity,
                   transition: "opacity 0.2s",
                   outline: isHighlighted
-                    ? "2px solid rgba(139,92,246,0.45)"
+                    ? "2px solid rgba(14,165,233,0.45)"
                     : "none",
                 }}
               >
-                {/* Complete toggle */}
-                <button
-                  onClick={() => onToggleComplete(exam.id)}
-                  title={exam.completed ? "Mark incomplete" : "Mark complete"}
-                  style={{
-                    width: "22px",
-                    height: "22px",
-                    borderRadius: "50%",
-                    border: `2px solid ${exam.completed ? "var(--success)" : "var(--border)"}`,
-                    background: exam.completed
-                      ? "var(--success)"
-                      : "transparent",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {exam.completed && (
+                {/* Completion status indicator */}
+                {exam.completed && (
+                  <div
+                    style={{
+                      width: "22px",
+                      height: "22px",
+                      borderRadius: "50%",
+                      background: "var(--success)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                    title="Exam completed"
+                  >
                     <span style={{ color: "#fff", fontSize: "12px" }}>✓</span>
-                  )}
-                </button>
+                  </div>
+                )}
 
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>

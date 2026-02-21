@@ -60,7 +60,7 @@ export default function RegisterPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="glass w-full max-w-md p-8"
+        className="glass w-full max-w-md p-10"
       >
         <div className="text-center mb-8">
           <div style={{ fontSize: "2.5rem", marginBottom: "8px" }}>📅</div>
@@ -87,9 +87,9 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div style={{ display: "grid", gap: "16px", marginBottom: "24px" }}>
+          <div style={{ display: "grid", gap: "20px", marginBottom: "28px" }}>
             <div>
-              <label className="field-label">Email</label>
+              <label className="field-label">Email Address</label>
               <input
                 {...register("email")}
                 type="email"

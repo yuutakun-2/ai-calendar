@@ -13,6 +13,12 @@
     "**/*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.14",
+    "@fullcalendar/daygrid": "^6.1.14",
+    "@fullcalendar/interaction": "^6.1.14",
+    "@fullcalendar/react": "^6.1.14",
+    "@fullcalendar/timegrid": "^6.1.14",
+    "@fullcalendar/web-worker": "^6.1.14",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/adapter-pg": "^7.4.1",
@@ -28,6 +34,7 @@
     "react-big-calendar": "^1.19.4",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.1",
+    "react-resizable-panels": "^2.1.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {
