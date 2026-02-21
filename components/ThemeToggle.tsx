@@ -87,7 +87,7 @@ export default function ThemeToggle() {
     >
       <span
         style={{
-          fontSize: "1.2rem",
+          fontSize: "0.8rem",
         }}
       >
         {theme === "dark" ? "🌙" : "☀️"}

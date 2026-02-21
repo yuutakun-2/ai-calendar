@@ -51,6 +51,7 @@ export default function LoginPage() {
           background:
             "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)",
           pointerEvents: "none",
+          padding: 4,
         }}
       />
 
@@ -58,7 +59,8 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="glass w-full max-w-md p-10"
+        className="glass w-full max-w-md"
+        style={{ padding: "24px" }}
       >
         {/* Logo */}
         <div className="text-center mb-8">

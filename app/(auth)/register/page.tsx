@@ -60,7 +60,8 @@ export default function RegisterPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="glass w-full max-w-md p-10"
+        className="glass w-full max-w-md"
+        style={{ padding: "24px" }}
       >
         <div className="text-center mb-8">
           <div style={{ fontSize: "2.5rem", marginBottom: "8px" }}>📅</div>

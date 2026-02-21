@@ -33,7 +33,7 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
           subject: exam.subject,
           examType: exam.examType as ExamInput["examType"],
           category: exam.category as ExamInput["category"],
-          semester: Number(exam.semester),
+          semester: exam.semester,
           date: exam.date.slice(0, 10),
           startTime: exam.startTime,
           endTime: exam.endTime,
@@ -48,7 +48,7 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
         subject: exam.subject,
         examType: exam.examType as ExamInput["examType"],
         category: exam.category as ExamInput["category"],
-        semester: Number(exam.semester),
+        semester: exam.semester,
         date: exam.date.slice(0, 10),
         startTime: exam.startTime,
         endTime: exam.endTime,
@@ -83,15 +83,9 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
     color: "var(--text-primary)",
     fontSize: "0.9rem",
     outline: "none",
-    position: "relative" as const,
-    zIndex: 10,
   });
 
-  const selectStyle = {
-    ...inputStyle(false),
-    appearance: "none" as const,
-    cursor: "pointer" as const,
-  };
+  const selectStyle = { ...inputStyle(false), appearance: "none" as const };
 
   return (
     <motion.div
@@ -232,7 +226,7 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
           <div style={{ marginBottom: "16px" }}>
             <label className="field-label">Semester</label>
             <input
-              {...register("semester", { valueAsNumber: true })}
+              {...register("semester")}
               type="number"
               min="1"
               placeholder="e.g. 1"

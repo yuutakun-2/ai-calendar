@@ -56,10 +56,86 @@ body {
   color-scheme: light;
 }
 
+/* Date and time picker icons for both themes */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  transition:
+    filter 0.2s ease,
+    opacity 0.2s ease;
+}
+
+/* Dark theme icons - more specific targeting */
 [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
 [data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.2);
-  opacity: 0.9;
+  filter: invert(1) brightness(1.2) hue-rotate(180deg) !important;
+  opacity: 0.9 !important;
+}
+
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator:hover,
+[data-theme="dark"]
+  input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  filter: invert(1) brightness(1.4) hue-rotate(180deg) !important;
+  opacity: 1 !important;
+}
+
+/* Light theme icons - more specific targeting */
+[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: brightness(0.4) saturate(1.5) !important;
+  opacity: 0.8 !important;
+}
+
+[data-theme="light"]
+  input[type="date"]::-webkit-calendar-picker-indicator:hover,
+[data-theme="light"]
+  input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0.3) saturate(1.8) !important;
+  opacity: 1 !important;
+}
+
+/* Additional targeting for WebKit browsers */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Firefox support */
+input[type="date"]::-moz-calendar-picker-indicator,
+input[type="time"]::-moz-calendar-picker-indicator {
+  filter: var(--icon-filter, none);
+  opacity: var(--icon-opacity, 1);
+  cursor: pointer;
+}
+
+[data-theme="dark"] {
+  --icon-filter: invert(1) brightness(1.2) hue-rotate(180deg);
+  --icon-opacity: 0.9;
+}
+
+[data-theme="light"] {
+  --icon-filter: brightness(0.4) saturate(1.5);
+  --icon-opacity: 0.8;
+}
+
+/* Force icon colors for all input fields */
+input[type="date"],
+input[type="time"] {
+  color-scheme: inherit;
+}
+
+/* Inner spin buttons for time inputs */
+[data-theme="dark"] input[type="time"]::-webkit-inner-spin-button,
+[data-theme="dark"] input[type="date"]::-webkit-inner-spin-button {
+  filter: invert(1) !important;
+}
+
+[data-theme="light"] input[type="time"]::-webkit-inner-spin-button,
+[data-theme="light"] input[type="date"]::-webkit-inner-spin-button {
+  filter: brightness(0.7) !important;
 }
 
 /* Select dropdown arrow */
@@ -77,18 +153,6 @@ select {
 
 [data-theme="light"] select {
   color: var(--text-primary);
-}
-
-/* Dark mode date/time picker icons */
-[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
-[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.2);
-  opacity: 0.9;
-}
-
-[data-theme="dark"] input[type="date"]::-webkit-inner-spin-button,
-[data-theme="dark"] input[type="time"]::-webkit-inner-spin-button {
-  filter: invert(1);
 }
 
 /* Scrollbar */

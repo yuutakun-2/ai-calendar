@@ -354,20 +354,6 @@ export default function DashboardPage() {
               flexDirection: "column",
             }}
           >
-            <h3
-              style={{
-                margin: "0 0 16px 0",
-                fontSize: "1rem",
-                fontWeight: 600,
-                color: theme.textPrimary,
-              }}
-            >
-              {calendarMode === "nearest"
-                ? "Nearest Exam"
-                : calendarMode === "filter"
-                  ? "Filtered Exams"
-                  : `All Exams (${calendarExams.length})`}
-            </h3>
             <div
               style={{
                 flex: 1,
@@ -378,6 +364,20 @@ export default function DashboardPage() {
                 padding: "16px",
               }}
             >
+              <h3
+                style={{
+                  margin: "0 0 16px 0",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  color: theme.textPrimary,
+                }}
+              >
+                {calendarMode === "nearest"
+                  ? "Nearest Exam"
+                  : calendarMode === "filter"
+                    ? "Filtered Exams"
+                    : `All Exams (${calendarExams.length})`}
+              </h3>
               {calendarMode === "nearest" && nearest ? (
                 <div
                   style={{
