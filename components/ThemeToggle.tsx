@@ -57,22 +57,33 @@ const getInitialTheme = (): Theme => {
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
   const currentTheme = THEMES[theme as keyof typeof THEMES];
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
       style={{
-        padding: "9px 18px", // Match Add Exam and Logout button height
+        width: isMobile ? "40px" : "auto",
+        height: "40px",
+        padding: isMobile ? "0" : "9px 18px",
         background: currentTheme.bgCard,
         border: `1px solid ${currentTheme.border}`,
-        borderRadius: "6px", // Match other navbar buttons
+        borderRadius: "6px",
         color: currentTheme.textPrimary,
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
-        gap: "8px",
-        fontSize: "0.875rem", // Match other navbar buttons
+        justifyContent: "center",
+        gap: isMobile ? "0" : "8px",
+        fontSize: "0.875rem",
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLButtonElement).style.borderColor =
@@ -92,15 +103,17 @@ export default function ThemeToggle() {
       >
         {theme === "dark" ? "🌙" : "☀️"}
       </span>
-      <span
-        style={{
-          fontSize: "0.75rem",
-          fontWeight: "600",
-          textTransform: "capitalize",
-        }}
-      >
-        {theme}
-      </span>
+      {!isMobile && (
+        <span
+          style={{
+            fontSize: "0.75rem",
+            fontWeight: "600",
+            textTransform: "capitalize",
+          }}
+        >
+          {theme}
+        </span>
+      )}
     </button>
   );
 }

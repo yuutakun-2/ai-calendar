@@ -150,15 +150,17 @@ export default function DashboardPage() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ fontSize: "1.4rem" }}>📅</span>
-          <span
-            style={{
-              fontWeight: 700,
-              fontSize: "1.1rem",
-              color: theme.textPrimary,
-            }}
-          >
-            ExamPal
-          </span>
+          {!isMobile && (
+            <span
+              style={{
+                fontWeight: 700,
+                fontSize: "1.1rem",
+                color: theme.textPrimary,
+              }}
+            >
+              ExamPal
+            </span>
+          )}
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           <button
@@ -167,8 +169,9 @@ export default function DashboardPage() {
               setShowForm(true);
             }}
             style={{
-              width: "auto",
-              padding: "9px 18px",
+              width: isMobile ? "40px" : "auto",
+              height: "40px",
+              padding: isMobile ? "0" : "9px 18px",
               fontSize: "0.875rem",
               background: theme.accent,
               color: "white",
@@ -176,16 +179,21 @@ export default function DashboardPage() {
               borderRadius: "6px",
               cursor: "pointer",
               fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
             id="add-exam-btn"
           >
-            + Add Exam
+            {isMobile ? "+" : "+ Add Exam"}
           </button>
           <ThemeToggle />
           <button
             onClick={handleLogout}
             style={{
-              padding: "9px 16px",
+              width: isMobile ? "40px" : "auto",
+              height: "40px",
+              padding: isMobile ? "0" : "9px 16px",
               fontSize: "0.875rem",
               background: "transparent",
               color: theme.textPrimary,
@@ -193,9 +201,12 @@ export default function DashboardPage() {
               borderRadius: "6px",
               cursor: "pointer",
               fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            Logout
+            {isMobile ? "🔑" : "Logout"}
           </button>
         </div>
       </nav>
@@ -256,28 +267,30 @@ export default function DashboardPage() {
                     <span style={{ fontSize: "1.2rem" }}>
                       {k === "nearest" ? "🔥" : k === "all" ? "📅" : "🔎"}
                     </span>
-                    <div>
-                      <p style={{ fontWeight: 800, fontSize: "0.95rem" }}>
-                        {k === "nearest"
-                          ? "View Nearest Exam"
-                          : k === "all"
-                            ? "View Calendar"
-                            : "View Filter"}
-                      </p>
-                      <p
-                        style={{
-                          color: theme.textMuted,
-                          fontSize: "0.78rem",
-                          marginTop: 2,
-                        }}
-                      >
-                        {k === "nearest"
-                          ? "Focus on your next exam"
-                          : k === "all"
-                            ? "Show all exams normally"
-                            : "Filter by type, semester, and subject"}
-                      </p>
-                    </div>
+                    {!isMobile && (
+                      <div>
+                        <p style={{ fontWeight: 800, fontSize: "0.95rem" }}>
+                          {k === "nearest"
+                            ? "View Nearest Exam"
+                            : k === "all"
+                              ? "View Calendar"
+                              : "View Filter"}
+                        </p>
+                        <p
+                          style={{
+                            color: theme.textMuted,
+                            fontSize: "0.78rem",
+                            marginTop: 2,
+                          }}
+                        >
+                          {k === "nearest"
+                            ? "Focus on your next exam"
+                            : k === "all"
+                              ? "Show all exams normally"
+                              : "Filter by type, semester, and subject"}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </button>
               );
@@ -340,9 +353,10 @@ export default function DashboardPage() {
           style={{
             flex: 1,
             display: "flex",
-            gap: "20px",
+            gap: isMobile ? "16px" : "20px",
             flexDirection: isMobile ? "column" : "row",
-            height: "70vh", // Use 100% of remaining height
+            height: isMobile ? "auto" : "70vh", // Auto height on mobile to prevent overflow
+            minHeight: isMobile ? "600px" : "auto", // Minimum height on mobile
           }}
         >
           {/* Exam cards section */}
@@ -352,6 +366,7 @@ export default function DashboardPage() {
               flexShrink: 0,
               display: "flex",
               flexDirection: "column",
+              height: isMobile ? "120px" : "auto", // Reduced height on mobile to show only first card
             }}
           >
             <div
@@ -581,7 +596,8 @@ export default function DashboardPage() {
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              overflowY: "auto", // Enable vertical scrolling
+              overflowY: "auto",
+              minHeight: isMobile ? "350px" : "auto", // Ensure calendar has minimum height on mobile
             }}
           >
             <FullCalendarView

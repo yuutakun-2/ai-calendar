@@ -1,16 +1,17 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 
 const FILTERS = [
-  "All",
-  "Mid Term",
-  "End Term",
-  "CA",
-  "Lab",
-  "Other",
-  "Regular",
-  "Backlog",
+  { name: "All", icon: "📋" },
+  { name: "Mid Term", icon: "📝" },
+  { name: "End Term", icon: "📚" },
+  { name: "CA", icon: "📄" },
+  { name: "Lab", icon: "🔬" },
+  { name: "Other", icon: "📌" },
+  { name: "Regular", icon: "✅" },
+  { name: "Backlog", icon: "⏰" },
 ];
 
 interface Props {
@@ -19,6 +20,15 @@ interface Props {
 }
 
 export default function ExamFilterTabs({ active, onChange }: Props) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   return (
     <div
       style={{
@@ -30,23 +40,28 @@ export default function ExamFilterTabs({ active, onChange }: Props) {
     >
       {FILTERS.map((f) => (
         <button
-          key={f}
-          onClick={() => onChange(f)}
+          key={f.name}
+          onClick={() => onChange(f.name)}
           style={{
             position: "relative",
-            padding: "6px 16px",
+            padding: isMobile ? "8px 12px" : "6px 16px",
             borderRadius: "20px",
             border: "1px solid",
-            borderColor: active === f ? "var(--accent)" : "var(--border)",
+            borderColor: active === f.name ? "var(--accent)" : "var(--border)",
             background: "transparent",
-            color: active === f ? "var(--accent-light)" : "var(--text-muted)",
+            color:
+              active === f.name ? "var(--accent-light)" : "var(--text-muted)",
             fontWeight: 500,
             fontSize: "0.8rem",
             cursor: "pointer",
             transition: "all 0.15s",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minWidth: isMobile ? "40px" : "auto",
           }}
         >
-          {active === f && (
+          {active === f.name && (
             <motion.div
               layoutId="filter-bg"
               style={{
@@ -58,7 +73,9 @@ export default function ExamFilterTabs({ active, onChange }: Props) {
               transition={{ duration: 0.15 }}
             />
           )}
-          <span style={{ position: "relative", zIndex: 1 }}>{f}</span>
+          <span style={{ position: "relative", zIndex: 1 }}>
+            {isMobile ? f.icon : f.name}
+          </span>
         </button>
       ))}
     </div>
