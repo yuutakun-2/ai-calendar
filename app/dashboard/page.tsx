@@ -126,39 +126,22 @@ export default function DashboardPage() {
   return (
     <div
       style={{
-        minHeight: "100vh",
-        background:
-          themeName === "dark"
-            ? "radial-gradient(ellipse at top left, #150a2e 0%, #0f0f23 50%)"
-            : "radial-gradient(ellipse at top left, #f8fafc 0%, #ffffff 50%)",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: theme.bgCard,
       }}
     >
-      {/* Ambient glow */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          right: 0,
-          width: "500px",
-          height: "500px",
-          background:
-            "radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* Navbar */}
+      {/* Navbar - fixed at top */}
       <nav
         style={{
+          height: "73px", // Fixed height for navbar
           borderBottom: `1px solid ${theme.border}`,
           padding: "16px 24px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           backdropFilter: "blur(12px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 50,
           background:
             themeName === "dark"
               ? "rgba(10,10,15,0.85)"
@@ -171,12 +154,7 @@ export default function DashboardPage() {
             style={{
               fontWeight: 700,
               fontSize: "1.1rem",
-              background:
-                themeName === "dark"
-                  ? "linear-gradient(135deg, #f1f0ff, #a78bfa)"
-                  : "linear-gradient(135deg, #4c1d95, #7c3aed)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              color: theme.textPrimary,
             }}
           >
             ExamPal
@@ -222,10 +200,18 @@ export default function DashboardPage() {
         </div>
       </nav>
 
+      {/* Main content area - uses 100% remaining height */}
       <main
-        style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 16px" }}
+        style={{
+          height: "calc(100vh - 73px)", // Full remaining height after navbar
+          display: "flex",
+          flexDirection: "column",
+          maxWidth: "1200px",
+          margin: "0 auto",
+          padding: "24px 16px",
+        }}
       >
-        {/* Top controls area (approx top 1/4) */}
+        {/* Top controls area */}
         <div style={{ display: "grid", gap: "16px", marginBottom: "20px" }}>
           <div
             style={{
@@ -349,17 +335,14 @@ export default function DashboardPage() {
           </AnimatePresence>
         </div>
 
-        {/* Calendar area */}
-        <motion.div
-          key={calendarMode}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.15 }}
+        {/* Main content area with cards and calendar - uses 100% remaining height */}
+        <div
           style={{
+            flex: 1,
             display: "flex",
             gap: "20px",
-            height: isMobile ? "auto" : "600px",
             flexDirection: isMobile ? "column" : "row",
+            height: "70vh", // Use 100% of remaining height
           }}
         >
           {/* Exam cards section */}
@@ -369,7 +352,6 @@ export default function DashboardPage() {
               flexShrink: 0,
               display: "flex",
               flexDirection: "column",
-              height: isMobile ? "300px" : "auto",
             }}
           >
             <h3
@@ -389,7 +371,7 @@ export default function DashboardPage() {
             <div
               style={{
                 flex: 1,
-                overflowY: "auto",
+                overflowY: "auto", // Enable vertical scrolling
                 background: theme.bgCard,
                 borderRadius: "12px",
                 border: `1px solid ${theme.border}`,
@@ -512,7 +494,7 @@ export default function DashboardPage() {
                             style={{
                               fontSize: "0.85rem",
                               color: theme.textMuted,
-                              marginTop: "4px",
+                              marginTop: 4,
                             }}
                           >
                             {exam.examType} • {exam.code}
@@ -599,7 +581,7 @@ export default function DashboardPage() {
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              height: isMobile ? "400px" : "auto",
+              overflowY: "auto", // Enable vertical scrolling
             }}
           >
             <FullCalendarView
@@ -616,7 +598,7 @@ export default function DashboardPage() {
               }
             />
           </div>
-        </motion.div>
+        </div>
       </main>
 
       {/* Floating AI button + drawer */}

@@ -63,16 +63,16 @@ export default function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       style={{
-        padding: "8px 12px",
+        padding: "9px 18px", // Match Add Exam and Logout button height
         background: currentTheme.bgCard,
         border: `1px solid ${currentTheme.border}`,
-        borderRadius: "8px",
+        borderRadius: "6px", // Match other navbar buttons
         color: currentTheme.textPrimary,
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
         gap: "8px",
-        fontSize: "0.875rem",
+        fontSize: "0.875rem", // Match other navbar buttons
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLButtonElement).style.borderColor =

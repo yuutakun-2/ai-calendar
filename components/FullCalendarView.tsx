@@ -252,7 +252,7 @@ export default function FullCalendarView({
           padding: "2px 4px",
           fontSize: "0.85rem",
           fontWeight: "500",
-          color: "white",
+          color: theme.textPrimary, // Use theme color instead of hardcoded white
           overflow: "hidden",
         }}
       >
