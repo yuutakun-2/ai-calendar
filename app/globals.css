@@ -336,3 +336,95 @@ select {
     transform: translateY(-6px);
   }
 }
+
+/* React Big Calendar Theme */
+.rbc-calendar {
+  color: var(--text-primary);
+  font-family: inherit;
+}
+
+.rbc-header {
+  padding: 12px 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border);
+  background: var(--bg-secondary);
+  text-align: center;
+}
+
+.rbc-today {
+  background-color: rgba(14, 165, 233, 0.1);
+}
+
+.rbc-off-range {
+  color: var(--text-muted);
+}
+
+.rbc-event {
+  padding: 2px 5px;
+  background: var(--accent);
+  border-radius: 4px;
+  color: white;
+  border: none;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.rbc-event:hover {
+  background: var(--accent-light);
+}
+
+.rbc-event-content {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rbc-month-view {
+  border: none;
+  background: transparent;
+}
+
+.rbc-date-cell {
+  padding: 4px 2px;
+  text-align: right;
+  color: var(--text-primary);
+}
+
+.rbc-date-cell > a,
+.rbc-date-cell > span {
+  color: var(--text-primary);
+}
+
+.rbc-toolbar {
+  display: none;
+}
+
+.rbc-month-row {
+  border-top: 1px solid var(--border);
+  min-height: 80px;
+}
+
+.rbc-date-cell,
+.rbc-time-slot {
+  border: 1px solid var(--border);
+}
+
+.rbc-time-content {
+  border-top: 1px solid var(--border);
+}
+
+.rbc-timeslot-group {
+  border-left: 1px solid var(--border);
+  min-height: 40px;
+}
+
+.rbc-time-header-content {
+  border-left: 1px solid var(--border);
+}
+
+.rbc-current-time-indicator {
+  background-color: var(--accent);
+  height: 2px;
+}
