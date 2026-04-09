@@ -16,6 +16,7 @@ interface Props {
   onDelete: (id: string) => void;
   nearestExam?: Exam | null;
   filteredExams?: Exam[];
+  selectedDate?: string | null;
 }
 
 export default function FullCalendarView({
@@ -25,6 +26,7 @@ export default function FullCalendarView({
   onDelete,
   nearestExam,
   filteredExams,
+  selectedDate,
 }: Props) {
   const calendarRef = useRef<FullCalendar>(null);
   const { theme: themeName } = useTheme();
@@ -71,6 +73,15 @@ export default function FullCalendarView({
         );
         root.style.setProperty("--fc-filtered-exam-border", theme.accent);
       }
+
+      // Add selected date highlight color
+      root.style.setProperty(
+        "--fc-selected-date-bg",
+        themeName === "dark"
+          ? "rgba(234, 179, 8, 0.25)"
+          : "rgba(234, 179, 8, 0.2)",
+      );
+      root.style.setProperty("--fc-selected-date-border", "#eab308");
 
       // Generate CSS for highlighted dates
       let highlightCSS = "";
@@ -121,6 +132,26 @@ export default function FullCalendarView({
           position: relative !important;
         }`;
         });
+      }
+
+      // Add selected date highlight
+      if (selectedDate) {
+        const dateStr = new Date(selectedDate).toISOString().split("T")[0];
+        highlightCSS += `
+        .fc-daygrid-day[data-date="${dateStr}"] {
+          background-color: var(--fc-selected-date-bg) !important;
+          border: 2px solid var(--fc-selected-date-border) !important;
+          position: relative !important;
+        }
+        
+        .fc-daygrid-day[data-date="${dateStr}"]::before {
+          content: "📍" !important;
+          position: absolute !important;
+          top: 2px !important;
+          right: 2px !important;
+          font-size: 12px !important;
+          z-index: 10 !important;
+        }`;
       }
 
       // Add spinner animation
@@ -202,7 +233,16 @@ export default function FullCalendarView({
         style.remove();
       };
     }
-  }, [theme, themeName, nearestExam, filteredExams]);
+  }, [theme, themeName, nearestExam, filteredExams, selectedDate]);
+
+  // Navigate to selected date when it changes
+  useEffect(() => {
+    if (selectedDate && calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      const date = new Date(selectedDate);
+      calendarApi.gotoDate(date);
+    }
+  }, [selectedDate]);
 
   // Convert exams to FullCalendar events
   const events = exams.map((exam) => {

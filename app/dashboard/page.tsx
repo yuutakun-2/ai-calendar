@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const fetchExams = useCallback(async () => {
     try {
@@ -98,6 +99,13 @@ export default function DashboardPage() {
     setShowForm(false);
     setEditingExam(null);
     fetchExams();
+  };
+
+  const handleExamCardClick = (exam: Exam) => {
+    // Set the selected date to navigate calendar to this exam's date
+    setSelectedDate(exam.date);
+    // Switch to "all" view to ensure calendar is visible
+    setCalendarMode("all");
   };
 
   const sortExams = (list: Exam[]) => {
@@ -470,6 +478,7 @@ export default function DashboardPage() {
                         cursor: "pointer",
                         transition: "all 0.2s",
                       }}
+                      onClick={() => handleExamCardClick(exam)}
                       onMouseEnter={(e) => {
                         (e.currentTarget as HTMLDivElement).style.borderColor =
                           theme.accent;
@@ -549,7 +558,8 @@ export default function DashboardPage() {
                           }}
                         >
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setEditingExam(exam);
                               setShowForm(true);
                             }}
@@ -567,7 +577,10 @@ export default function DashboardPage() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDelete(exam.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(exam.id);
+                            }}
                             style={{
                               padding: "6px 12px",
                               fontSize: "0.8rem",
@@ -612,6 +625,7 @@ export default function DashboardPage() {
               filteredExams={
                 calendarMode === "filter" ? filteredExams : undefined
               }
+              selectedDate={selectedDate}
             />
           </div>
         </div>
