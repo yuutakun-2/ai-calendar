@@ -12,6 +12,7 @@ import AIAssistant from "@/components/AIAssistant";
 import ThemeToggle, { useTheme } from "@/components/ThemeToggle";
 import { THEMES } from "@/lib/themes";
 import { generateICS, parseICS } from "@/lib/ics";
+import { sortExams } from "@/lib/examUtils";
 
 export interface Exam {
   id: string;
@@ -198,13 +199,6 @@ export default function DashboardPage() {
     setSelectedDate(exam.date);
     // Switch to "all" view to ensure calendar is visible
     setCalendarMode("all");
-  };
-
-  const sortExams = (list: Exam[]) => {
-    return [...list].sort((a, b) => {
-      if (a.completed !== b.completed) return a.completed ? 1 : -1;
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
-    });
   };
 
   const filteredExams = sortExams(

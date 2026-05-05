@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { useTheme } from "@/components/ThemeToggle";
 import { THEMES } from "@/lib/themes";
+import { fileToBase64 } from "@/lib/fileUtils";
 
 interface ExamField {
   code: string;
@@ -179,18 +180,7 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
     setFileLoading(true);
 
     try {
-      const fileData = await new Promise<{ data: string; mimeType: string }>(
-        (resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => {
-            const result = reader.result as string;
-            const base64Data = result.split(",")[1];
-            resolve({ data: base64Data, mimeType: file.type });
-          };
-          reader.onerror = (error) => reject(error);
-        },
-      );
+      const fileData = await fileToBase64(file);
 
       const msg = `Please extract exam details from this file: ${file.name}`;
       setMessages((prev: any) => [...prev, { role: "user", text: msg }]);
