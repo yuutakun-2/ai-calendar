@@ -27,18 +27,21 @@ Required fields for each exam (all 8):
   startTime   – HH:mm (24-hour)
   endTime     – HH:mm (24-hour)
 
+Optional field:
+  examDescription - brief additional details or instructions for the exam
+
 If ANY exam date is missing required fields, respond:
 {"status":"incomplete","examDates":[{"date":"YYYY-MM-DD","fields":{"fieldName":"extractedValue"},"missingFields":["field1","field2"],"isConfirmed":false}],"message":"I need more information for some exams. Please provide: [list missing fields in plain English]."}
 
 The "examDates" array must contain ALL exam dates mentioned so far, each with:
 - date: the exam date
-- fields: object with all extracted fields for that date
+- fields: object with all extracted fields for that date (include examDescription if found)
 - missingFields: array of required fields still missing
 - isConfirmed: false (always false for incomplete responses)
 
 RULE 3 — COMPLETE (MULTI-EXAM SUPPORT)
 When ALL fields are present for at least ONE exam date, respond:
-{"status":"complete","examDates":[{"date":"YYYY-MM-DD","fields":{"code":"...","subject":"...","examType":"...","category":"...","semester":1,"date":"YYYY-MM-DD","startTime":"HH:mm","endTime":"HH:mm"},"missingFields":[],"isConfirmed":true}],"message":"Exam details confirmed. Ready to add to calendar."}
+{"status":"complete","examDates":[{"date":"YYYY-MM-DD","fields":{"code":"...","subject":"...","examType":"...","category":"...","semester":1,"date":"YYYY-MM-DD","startTime":"HH:mm","endTime":"HH:mm","examDescription":"..."},"missingFields":[],"isConfirmed":true}],"message":"Exam details confirmed. Ready to add to calendar."}
 
 For complete responses:
 - Include ALL exam dates in the examDates array

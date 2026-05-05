@@ -6,6 +6,7 @@ import axios from "axios";
 import { useTheme } from "@/components/ThemeToggle";
 import { THEMES } from "@/lib/themes";
 import { fileToBase64 } from "@/lib/fileUtils";
+import LoadingDots from "@/components/LoadingDots";
 
 interface ExamField {
   code: string;
@@ -175,12 +176,8 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
     }
   };
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file || fileLoading) return;
-
+  const processFile = async (file: File) => {
+    if (fileLoading) return;
     setFileLoading(true);
 
     try {
@@ -253,6 +250,26 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
     } finally {
       setFileLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) await processFile(file);
+  };
+
+  const handlePaste = async (event: React.ClipboardEvent) => {
+    const items = event.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        const file = items[i].getAsFile();
+        if (file) {
+          await processFile(file);
+          break;
+        }
+      }
     }
   };
 
@@ -394,6 +411,7 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder={
                 loading
                   ? "AI is thinking…"
@@ -441,11 +459,33 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
                 id="ai-send-btn"
                 title="Send message"
               >
-                {loading || fileLoading
-                  ? "Sending..."
-                  : isListening
-                    ? "Listening..."
-                    : "Send"}
+                {loading || fileLoading ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <span>Sending</span>
+                    <LoadingDots color="white" size={3} gap={2} />
+                  </div>
+                ) : isListening ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <span>Listening</span>
+                    <LoadingDots color="white" size={3} gap={2} />
+                  </div>
+                ) : (
+                  "Send"
+                )}
               </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -461,7 +501,7 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
                 }}
                 title="Upload file (PDF, image, text)"
               >
-                {fileLoading ? <span className="spinner" /> : "📎 File"}
+                {fileLoading ? <LoadingDots size={3} gap={2} /> : "📎 File"}
               </button>
               <button
                 onClick={toggleVoiceInput}

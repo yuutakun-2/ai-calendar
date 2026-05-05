@@ -33,6 +33,8 @@ const EXAM_KEYWORDS = [
   "morning",
   "afternoon",
   "evening",
+  "description",
+  "detail",
 ];
 
 export function looksExamRelated(message: string): boolean {
@@ -125,6 +127,7 @@ export function validateAIResponse(
         date: data.date,
         startTime: data.startTime,
         endTime: data.endTime,
+        examDescription: data.examDescription as string | undefined,
       },
     };
   }
