@@ -1,28 +1,39 @@
-import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-const PUBLIC_PATHS = [
-  "/login",
-  "/register",
-  "/api/auth/login",
-  "/api/auth/register",
-];
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
 
-export default function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+export default async function proxy(request: NextRequest) {
+  const token = request.cookies.get("token")?.value;
+  const { pathname } = request.nextUrl;
 
-  // Allow public paths
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next();
-  }
+  const isPublicAuthPath = pathname === "/login" || pathname === "/register";
+  const isDashboardPath = pathname.startsWith("/dashboard");
+  const isApiPath =
+    pathname.startsWith("/api/exams") || pathname.startsWith("/api/ai");
+  const isRoot = pathname === "/";
 
-  // Protect /dashboard and /api routes
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/api")) {
-    const payload = verifyToken(req);
-    if (!payload) {
-      const loginUrl = req.nextUrl.clone();
-      loginUrl.pathname = "/login";
-      return NextResponse.redirect(loginUrl);
+  if (token) {
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      await jwtVerify(token, secret);
+
+      // User is authenticated
+      if (isPublicAuthPath || isRoot) {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+      return NextResponse.next();
+    } catch (error) {
+      // Token invalid
+      if (isDashboardPath || isApiPath) {
+        return NextResponse.redirect(new URL("/login", request.url));
+      }
+    }
+  } else {
+    // No token
+    if (isDashboardPath || isApiPath || isRoot) {
+      return NextResponse.redirect(new URL("/login", request.url));
     }
   }
 
@@ -30,5 +41,12 @@ export default function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/api/exams/:path*", "/api/ai/:path*"],
+  matcher: [
+    "/",
+    "/login",
+    "/register",
+    "/dashboard/:path*",
+    "/api/exams/:path*",
+    "/api/ai/:path*",
+  ],
 };
