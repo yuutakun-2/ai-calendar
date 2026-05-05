@@ -26,3 +26,4 @@ export const THEMES = {
 } as const;
 
 export type Theme = keyof typeof THEMES;
+export type ThemeConfig = (typeof THEMES)[Theme];

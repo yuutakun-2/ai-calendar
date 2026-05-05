@@ -10,6 +10,8 @@ import FullCalendarView from "@/components/FullCalendarView";
 import ExamForm from "@/components/ExamForm";
 import AIAssistant from "@/components/AIAssistant";
 import ThemeToggle, { useTheme } from "@/components/ThemeToggle";
+import DashboardNavbar from "@/components/DashboardNavbar";
+import ExamCard from "@/components/ExamCard";
 import { THEMES } from "@/lib/themes";
 import { generateICS, parseICS } from "@/lib/ics";
 import { sortExams } from "@/lib/examUtils";
@@ -226,137 +228,21 @@ export default function DashboardPage() {
         background: theme.bgCard,
       }}
     >
-      {/* Navbar - fixed at top */}
-      <nav
-        style={{
-          height: "73px", // Fixed height for navbar
-          borderBottom: `1px solid ${theme.border}`,
-          padding: "16px 24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          backdropFilter: "blur(12px)",
-          background:
-            themeName === "dark"
-              ? "rgba(10,10,15,0.85)"
-              : "rgba(255,255,255,0.85)",
+      <DashboardNavbar
+        isMobile={isMobile}
+        themeName={themeName}
+        theme={theme}
+        onExport={handleExport}
+        onImport={handleImport}
+        importInputRef={importInputRef}
+        onAddExam={() => {
+          setEditingExam(null);
+          setAiInitialData(null);
+          setDetectedExamsQueue([]);
+          setShowForm(true);
         }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "1.4rem" }}>📅</span>
-          {!isMobile && (
-            <span
-              style={{
-                fontWeight: 700,
-                fontSize: "1.1rem",
-                color: theme.textPrimary,
-              }}
-            >
-              ExamPal
-            </span>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <button
-            onClick={handleExport}
-            style={{
-              width: isMobile ? "40px" : "auto",
-              height: "40px",
-              padding: isMobile ? "0" : "9px 16px",
-              fontSize: "0.875rem",
-              background: "transparent",
-              color: theme.textPrimary,
-              border: `1px solid ${theme.border}`,
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            title="Export to Calendar"
-          >
-            {isMobile ? "⬇️" : "Export"}
-          </button>
-
-          <button
-            onClick={() => importInputRef.current?.click()}
-            style={{
-              width: isMobile ? "40px" : "auto",
-              height: "40px",
-              padding: isMobile ? "0" : "9px 16px",
-              fontSize: "0.875rem",
-              background: "transparent",
-              color: theme.textPrimary,
-              border: `1px solid ${theme.border}`,
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            title="Import from Calendar"
-          >
-            {isMobile ? "⬆️" : "Import"}
-          </button>
-          <input
-            type="file"
-            accept=".ics"
-            ref={importInputRef}
-            onChange={handleImport}
-            style={{ display: "none" }}
-          />
-
-          <button
-            onClick={() => {
-              setEditingExam(null);
-              setAiInitialData(null);
-              setDetectedExamsQueue([]);
-              setShowForm(true);
-            }}
-            style={{
-              width: isMobile ? "40px" : "auto",
-              height: "40px",
-              padding: isMobile ? "0" : "9px 18px",
-              fontSize: "0.875rem",
-              background: theme.accent,
-              color: "white",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            id="add-exam-btn"
-          >
-            {isMobile ? "+" : "+ Add Exam"}
-          </button>
-          <ThemeToggle />
-          <button
-            onClick={handleLogout}
-            style={{
-              width: isMobile ? "40px" : "auto",
-              height: "40px",
-              padding: isMobile ? "0" : "9px 16px",
-              fontSize: "0.875rem",
-              background: "transparent",
-              color: theme.textPrimary,
-              border: `1px solid ${theme.border}`,
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {isMobile ? "🔑" : "Logout"}
-          </button>
-        </div>
-      </nav>
+        onLogout={handleLogout}
+      />
 
       {/* Main content area - uses 100% remaining height */}
       <main
@@ -612,153 +498,23 @@ export default function DashboardPage() {
                   }}
                 >
                   {calendarExams.map((exam) => (
-                    <div
+                    <ExamCard
                       key={exam.id}
-                      style={{
-                        padding: "14px",
-                        background: theme.bgSecondary,
-                        border: `1px solid ${theme.border}`,
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}
+                      exam={exam}
+                      theme={theme}
                       onClick={() => handleExamCardClick(exam)}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLDivElement).style.borderColor =
-                          theme.accent;
-                        (e.currentTarget as HTMLDivElement).style.background =
-                          theme.bgCard;
+                      onEdit={(e) => {
+                        e.stopPropagation();
+                        setEditingExam(exam);
+                        setAiInitialData(null);
+                        setDetectedExamsQueue([]);
+                        setShowForm(true);
                       }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLDivElement).style.borderColor =
-                          theme.border;
-                        (e.currentTarget as HTMLDivElement).style.background =
-                          theme.bgSecondary;
+                      onDelete={(e) => {
+                        e.stopPropagation();
+                        handleDelete(exam.id);
                       }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "start",
-                        }}
-                      >
-                        <div style={{ flex: 1 }}>
-                          <div
-                            style={{
-                              fontSize: "0.95rem",
-                              fontWeight: 600,
-                              color: exam.completed
-                                ? theme.textMuted
-                                : theme.textPrimary,
-                              textDecoration: exam.completed
-                                ? "line-through"
-                                : "none",
-                            }}
-                          >
-                            {exam.subject}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "0.85rem",
-                              color: theme.textMuted,
-                              marginTop: 4,
-                            }}
-                          >
-                            {exam.examType} • {exam.code}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "0.85rem",
-                              color: theme.textSecondary,
-                              marginTop: "6px",
-                            }}
-                          >
-                            📅 {new Date(exam.date).toLocaleDateString()}{" "}
-                            &nbsp;·&nbsp; 🕐 {exam.startTime} – {exam.endTime}
-                          </div>
-                          {exam.examDescription && (
-                            <div
-                              style={{
-                                fontSize: "0.8rem",
-                                color: theme.textMuted,
-                                marginTop: "6px",
-                                display: "-webkit-box",
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: "vertical",
-                                overflow: "hidden",
-                                fontStyle: "italic",
-                              }}
-                            >
-                              {exam.examDescription}
-                            </div>
-                          )}
-                          {exam.completed && (
-                            <div
-                              style={{
-                                display: "inline-block",
-                                marginTop: "6px",
-                                padding: "2px 8px",
-                                background: theme.success,
-                                color: "white",
-                                borderRadius: "4px",
-                                fontSize: "0.75rem",
-                                fontWeight: 500,
-                              }}
-                            >
-                              Completed
-                            </div>
-                          )}
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "6px",
-                          }}
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingExam(exam);
-                              setAiInitialData(null);
-                              setDetectedExamsQueue([]);
-                              setShowForm(true);
-                            }}
-                            style={{
-                              padding: "6px 12px",
-                              fontSize: "0.8rem",
-                              background: theme.accent,
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              whiteSpace: "normal",
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(exam.id);
-                            }}
-                            style={{
-                              padding: "6px 12px",
-                              fontSize: "0.8rem",
-                              background: theme.danger,
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                    />
                   ))}
                 </div>
               )}

@@ -31,7 +31,11 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
   const theme = THEMES[themeName as keyof typeof THEMES];
 
   const [messages, setMessages] = useState<
-    Array<{ role: "user" | "assistant" | "error"; text: string }>
+    Array<{
+      role: "user" | "assistant" | "error";
+      text: string;
+      imageUrl?: string;
+    }>
   >([
     {
       role: "assistant",
@@ -183,7 +187,14 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
       const fileData = await fileToBase64(file);
 
       const msg = `Please extract exam details from this file: ${file.name}`;
-      setMessages((prev: any) => [...prev, { role: "user", text: msg }]);
+      const imageUrl = file.type.startsWith("image/")
+        ? `data:${file.type};base64,${fileData.data}`
+        : undefined;
+
+      setMessages((prev: any) => [
+        ...prev,
+        { role: "user", text: msg, imageUrl },
+      ]);
       setInput("");
 
       const { data } = await axios.post("/api/ai", {
@@ -350,6 +361,17 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
                     lineHeight: 1.5,
                   }}
                 >
+                  {msg.imageUrl && (
+                    <img
+                      src={msg.imageUrl}
+                      alt="Uploaded preview"
+                      style={{
+                        maxWidth: "100%",
+                        borderRadius: "8px",
+                        marginBottom: "8px",
+                      }}
+                    />
+                  )}
                   {msg.text}
                 </div>
               </motion.div>
@@ -398,7 +420,9 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
             >
               <button
                 onClick={send}
-                disabled={loading || fileLoading || !input.trim()}
+                disabled={
+                  loading || fileLoading || isListening || !input.trim()
+                }
                 style={{
                   width: "auto",
                   padding: "10px 16px",
@@ -408,7 +432,7 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
                   border: "none",
                   borderRadius: "6px",
                   cursor:
-                    loading || fileLoading || !input.trim()
+                    loading || fileLoading || isListening || !input.trim()
                       ? "not-allowed"
                       : "pointer",
                   fontSize: "0.9rem",
@@ -417,7 +441,11 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
                 id="ai-send-btn"
                 title="Send message"
               >
-                {loading ? "Sending..." : "Send"}
+                {loading || fileLoading
+                  ? "Sending..."
+                  : isListening
+                    ? "Listening..."
+                    : "Send"}
               </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
