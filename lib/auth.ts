@@ -15,9 +15,12 @@ export interface JwtPayload {
   email: string;
 }
 
-export function signToken(payload: JwtPayload): string {
+export function signToken(
+  payload: JwtPayload,
+  expiresIn: string | number = "7d",
+): string {
   return jwt.sign(payload, getJwtSecret(), {
-    expiresIn: "7d",
+    expiresIn: expiresIn as any,
     algorithm: "HS256",
   });
 }

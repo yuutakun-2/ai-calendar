@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { email, password } = parsed.data;
+    const { email, password, rememberMe } = parsed.data;
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -34,7 +34,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const token = signToken({ userId: user.id, email: user.email });
+    const expiresIn = rememberMe ? "7d" : "1d";
+    const maxAge = rememberMe ? 60 * 60 * 24 * 7 : 60 * 60 * 24;
+
+    const token = signToken({ userId: user.id, email: user.email }, expiresIn);
 
     const response = NextResponse.json(
       { message: "Login successful", user: { id: user.id, email: user.email } },
@@ -45,7 +48,7 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge,
       path: "/",
     });
 

@@ -17,7 +17,10 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginInput>({ resolver: zodResolver(LoginSchema) });
+  } = useForm<LoginInput>({
+    resolver: zodResolver(LoginSchema),
+    defaultValues: { rememberMe: true },
+  });
 
   const onSubmit = async (data: LoginInput) => {
     setServerError("");
@@ -115,6 +118,37 @@ export default function LoginPage() {
               {errors.password && (
                 <p className="error-text">{errors.password.message}</p>
               )}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginTop: "-8px",
+              }}
+            >
+              <input
+                {...register("rememberMe")}
+                type="checkbox"
+                id="rememberMe"
+                style={{
+                  width: "16px",
+                  height: "16px",
+                  accentColor: "var(--accent)",
+                  cursor: "pointer",
+                }}
+              />
+              <label
+                htmlFor="rememberMe"
+                style={{
+                  color: "var(--text-secondary)",
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                }}
+              >
+                Remember me for 7 days
+              </label>
             </div>
           </div>
 
