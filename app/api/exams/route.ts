@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       date,
       startTime,
       endTime,
+      examDescription,
     } = parsed.data;
 
     const exam = await prisma.exam.create({
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
         date: new Date(date),
         startTime,
         endTime,
+        examDescription,
         userId: payload.userId,
       },
     });

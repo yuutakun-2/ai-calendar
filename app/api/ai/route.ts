@@ -164,7 +164,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Build context from already gathered exam dates
     const fieldContext =
       examDates && examDates.length > 0
         ? `\nAlready gathered exam dates: ${JSON.stringify(
@@ -179,12 +178,22 @@ export async function POST(req: NextRequest) {
 
     const prompt = `${SYSTEM_PROMPT}${fieldContext}\n\nUser message: ${message}`;
 
+    let contentParts: any[] = [prompt];
+    if (file && file.data && file.mimeType) {
+      contentParts.push({
+        inlineData: {
+          data: file.data,
+          mimeType: file.mimeType,
+        },
+      });
+    }
+
     // Retry logic for transient Gemini API errors (503 high demand)
     let text = "";
     let lastError: unknown = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const result = await geminiModel.generateContent(prompt);
+        const result = await geminiModel.generateContent(contentParts);
         text = result.response.text().trim();
         lastError = null;
         break;

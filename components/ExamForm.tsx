@@ -43,6 +43,7 @@ export default function ExamForm({
           date: exam.date.slice(0, 10),
           startTime: exam.startTime,
           endTime: exam.endTime,
+          examDescription: exam.examDescription || "",
         }
       : initialData
         ? {
@@ -56,6 +57,7 @@ export default function ExamForm({
             date: initialData.date ? initialData.date.slice(0, 10) : "",
             startTime: initialData.startTime || "",
             endTime: initialData.endTime || "",
+            examDescription: initialData.examDescription || "",
           }
         : undefined,
   });
@@ -71,6 +73,7 @@ export default function ExamForm({
         date: exam.date.slice(0, 10),
         startTime: exam.startTime,
         endTime: exam.endTime,
+        examDescription: exam.examDescription || "",
       });
     } else if (initialData) {
       reset({
@@ -82,6 +85,7 @@ export default function ExamForm({
         date: initialData.date ? initialData.date.slice(0, 10) : "",
         startTime: initialData.startTime || "",
         endTime: initialData.endTime || "",
+        examDescription: initialData.examDescription || "",
       });
     } else {
       reset({});
@@ -307,6 +311,21 @@ export default function ExamForm({
                 <p className="error-text">{errors.endTime.message}</p>
               )}
             </div>
+          </div>
+
+          <div style={{ marginBottom: "16px" }}>
+            <label className="field-label">Description (Optional)</label>
+            <textarea
+              {...register("examDescription")}
+              placeholder="Add details about the exam..."
+              rows={3}
+              style={{
+                ...inputStyle(!!errors.examDescription || false),
+                resize: "none",
+                minHeight: "80px",
+                fontFamily: "inherit",
+              }}
+            />
           </div>
 
           {serverError && (

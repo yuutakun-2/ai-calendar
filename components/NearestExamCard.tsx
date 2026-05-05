@@ -127,6 +127,18 @@ export default function NearestExamCard({ exam, loading }: Props) {
             })}{" "}
             · {exam.startTime}–{exam.endTime}
           </p>
+          {exam.examDescription && (
+            <p
+              style={{
+                color: "var(--text-muted)",
+                fontSize: "0.8rem",
+                marginTop: "8px",
+                fontStyle: "italic",
+              }}
+            >
+              {exam.examDescription}
+            </p>
+          )}
         </div>
       </div>
       <div style={{ textAlign: "right" }}>

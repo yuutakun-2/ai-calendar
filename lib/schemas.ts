@@ -22,6 +22,7 @@ export const ExamSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, "Start time must be HH:mm"),
   endTime: z.string().regex(/^\d{2}:\d{2}$/, "End time must be HH:mm"),
+  examDescription: z.string().optional(),
 });
 
 export const AIMessageSchema = z.object({

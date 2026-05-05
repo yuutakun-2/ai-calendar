@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ import ExamForm from "@/components/ExamForm";
 import AIAssistant from "@/components/AIAssistant";
 import ThemeToggle, { useTheme } from "@/components/ThemeToggle";
 import { THEMES } from "@/lib/themes";
+import { generateICS, parseICS } from "@/lib/ics";
 
 export interface Exam {
   id: string;
@@ -23,6 +24,7 @@ export interface Exam {
   startTime: string;
   endTime: string;
   completed: boolean;
+  examDescription?: string;
   createdAt: string;
 }
 
@@ -56,7 +58,8 @@ export default function DashboardPage() {
       const examsWithAutoComplete = await Promise.all(
         data.exams.map(async (exam: Exam) => {
           if (!exam.completed) {
-            const examDateTime = new Date(`${exam.date}T${exam.endTime}`);
+            const dateStr = exam.date.split("T")[0];
+            const examDateTime = new Date(`${dateStr}T${exam.endTime}`);
             if (now > examDateTime) {
               // Auto-complete the exam
               try {
@@ -137,6 +140,59 @@ export default function DashboardPage() {
     }
   };
 
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = () => {
+    const icsContent = generateICS(exams);
+    const blob = new Blob([icsContent], {
+      type: "text/calendar;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "exampal_calendar.ics";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const importedExams = parseICS(text);
+
+    if (importedExams.length > 0) {
+      if (
+        confirm(
+          `Found ${importedExams.length} exams in the file. Do you want to import them?`,
+        )
+      ) {
+        setLoading(true);
+        try {
+          for (const exam of importedExams) {
+            await axios.post("/api/exams", exam);
+          }
+          await fetchExams();
+          alert("Import successful!");
+        } catch (error) {
+          console.error("Import failed", error);
+          alert(
+            "Failed to import some exams. They might have missing required fields.",
+          );
+        } finally {
+          setLoading(false);
+        }
+      }
+    } else {
+      alert("No valid events found in the file.");
+    }
+
+    if (importInputRef.current) importInputRef.current.value = "";
+  };
+
   const handleExamCardClick = (exam: Exam) => {
     // Set the selected date to navigate calendar to this exam's date
     setSelectedDate(exam.date);
@@ -207,6 +263,57 @@ export default function DashboardPage() {
           )}
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <button
+            onClick={handleExport}
+            style={{
+              width: isMobile ? "40px" : "auto",
+              height: "40px",
+              padding: isMobile ? "0" : "9px 16px",
+              fontSize: "0.875rem",
+              background: "transparent",
+              color: theme.textPrimary,
+              border: `1px solid ${theme.border}`,
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            title="Export to Calendar"
+          >
+            {isMobile ? "⬇️" : "Export"}
+          </button>
+
+          <button
+            onClick={() => importInputRef.current?.click()}
+            style={{
+              width: isMobile ? "40px" : "auto",
+              height: "40px",
+              padding: isMobile ? "0" : "9px 16px",
+              fontSize: "0.875rem",
+              background: "transparent",
+              color: theme.textPrimary,
+              border: `1px solid ${theme.border}`,
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            title="Import from Calendar"
+          >
+            {isMobile ? "⬆️" : "Import"}
+          </button>
+          <input
+            type="file"
+            accept=".ics"
+            ref={importInputRef}
+            onChange={handleImport}
+            style={{ display: "none" }}
+          />
+
           <button
             onClick={() => {
               setEditingExam(null);
@@ -321,19 +428,6 @@ export default function DashboardPage() {
                             : k === "all"
                               ? "View Calendar"
                               : "View Filter"}
-                        </p>
-                        <p
-                          style={{
-                            color: theme.textMuted,
-                            fontSize: "0.78rem",
-                            marginTop: 2,
-                          }}
-                        >
-                          {k === "nearest"
-                            ? "Focus on your next exam"
-                            : k === "all"
-                              ? "Show all exams normally"
-                              : "Filter by type, semester, and subject"}
                         </p>
                       </div>
                     )}
@@ -477,6 +571,22 @@ export default function DashboardPage() {
                     📅 {new Date(nearest.date).toLocaleDateString()}{" "}
                     &nbsp;·&nbsp; 🕐 {nearest.startTime} – {nearest.endTime}
                   </div>
+                  {nearest.examDescription && (
+                    <div
+                      style={{
+                        fontSize: "0.8rem",
+                        color: theme.textMuted,
+                        marginBottom: "12px",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      {nearest.examDescription}
+                    </div>
+                  )}
                   <div style={{ display: "flex", gap: "8px" }}>
                     <button
                       onClick={() => {
@@ -573,6 +683,22 @@ export default function DashboardPage() {
                             📅 {new Date(exam.date).toLocaleDateString()}{" "}
                             &nbsp;·&nbsp; 🕐 {exam.startTime} – {exam.endTime}
                           </div>
+                          {exam.examDescription && (
+                            <div
+                              style={{
+                                fontSize: "0.8rem",
+                                color: theme.textMuted,
+                                marginTop: "6px",
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                                fontStyle: "italic",
+                              }}
+                            >
+                              {exam.examDescription}
+                            </div>
+                          )}
                           {exam.completed && (
                             <div
                               style={{

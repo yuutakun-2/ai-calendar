@@ -28,6 +28,7 @@ model Exam {
   startTime String
   endTime   String
   completed Boolean  @default(false)
+  examDescription String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

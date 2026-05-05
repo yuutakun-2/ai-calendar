@@ -177,10 +177,21 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
     if (!file || fileLoading) return;
 
     setFileLoading(true);
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
+      const fileData = await new Promise<{ data: string; mimeType: string }>(
+        (resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => {
+            const result = reader.result as string;
+            const base64Data = result.split(",")[1];
+            resolve({ data: base64Data, mimeType: file.type });
+          };
+          reader.onerror = (error) => reject(error);
+        },
+      );
+
       const msg = `Please extract exam details from this file: ${file.name}`;
       setMessages((prev: any) => [...prev, { role: "user", text: msg }]);
       setInput("");
@@ -188,7 +199,7 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
       const { data } = await axios.post("/api/ai", {
         message: msg,
         examDates: [],
-        file: file,
+        file: fileData,
       });
 
       if (data.status === "complete") {

@@ -29,8 +29,17 @@ export async function PUT(
       );
     }
 
-    const { code, subject, examType, category, date, startTime, endTime } =
-      parsed.data;
+    const {
+      code,
+      subject,
+      examType,
+      category,
+      semester,
+      date,
+      startTime,
+      endTime,
+      examDescription,
+    } = parsed.data;
 
     const updated = await prisma.exam.update({
       where: { id },
@@ -39,9 +48,11 @@ export async function PUT(
         subject,
         examType,
         category,
+        semester,
         date: new Date(date),
         startTime,
         endTime,
+        examDescription,
       },
     });
 
