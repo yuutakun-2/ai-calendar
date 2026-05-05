@@ -39,6 +39,12 @@ export default function DashboardPage() {
   const [aiOpen, setAiOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [aiInitialData, setAiInitialData] = useState<Partial<Exam> | null>(
+    null,
+  );
+  const [detectedExamsQueue, setDetectedExamsQueue] = useState<Partial<Exam>[]>(
+    [],
+  );
   const [isMobile, setIsMobile] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -95,10 +101,40 @@ export default function DashboardPage() {
     setExams((prev) => prev.filter((e) => e.id !== id));
   };
 
+  const processNextInQueue = useCallback(() => {
+    setDetectedExamsQueue((prevQueue) => {
+      if (prevQueue.length > 0) {
+        const nextExam = prevQueue[0];
+        setAiInitialData(nextExam);
+        setEditingExam(null);
+        setShowForm(true);
+        return prevQueue.slice(1);
+      } else {
+        setShowForm(false);
+        setEditingExam(null);
+        setAiInitialData(null);
+        return prevQueue;
+      }
+    });
+  }, []);
+
   const handleFormSuccess = () => {
-    setShowForm(false);
-    setEditingExam(null);
     fetchExams();
+    processNextInQueue();
+  };
+
+  const handleFormClose = () => {
+    processNextInQueue();
+  };
+
+  const handleExamsDetected = (exams: Partial<Exam>[]) => {
+    if (exams.length > 0) {
+      setAiInitialData(exams[0]);
+      setDetectedExamsQueue(exams.slice(1));
+      setEditingExam(null);
+      setShowForm(true);
+      setAiOpen(false); // Close the AI drawer
+    }
   };
 
   const handleExamCardClick = (exam: Exam) => {
@@ -174,6 +210,8 @@ export default function DashboardPage() {
           <button
             onClick={() => {
               setEditingExam(null);
+              setAiInitialData(null);
+              setDetectedExamsQueue([]);
               setShowForm(true);
             }}
             style={{
@@ -443,6 +481,8 @@ export default function DashboardPage() {
                     <button
                       onClick={() => {
                         setEditingExam(nearest);
+                        setAiInitialData(null);
+                        setDetectedExamsQueue([]);
                         setShowForm(true);
                       }}
                       className="btn-primary"
@@ -561,6 +601,8 @@ export default function DashboardPage() {
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingExam(exam);
+                              setAiInitialData(null);
+                              setDetectedExamsQueue([]);
                               setShowForm(true);
                             }}
                             style={{
@@ -618,6 +660,8 @@ export default function DashboardPage() {
               loading={loading}
               onEdit={(exam) => {
                 setEditingExam(exam);
+                setAiInitialData(null);
+                setDetectedExamsQueue([]);
                 setShowForm(true);
               }}
               onDelete={handleDelete}
@@ -685,7 +729,10 @@ export default function DashboardPage() {
                 width: "min(420px, calc(100vw - 32px))",
               }}
             >
-              <AIAssistant onExamAdded={fetchExams} />
+              <AIAssistant
+                onExamAdded={fetchExams}
+                onExamsDetected={handleExamsDetected}
+              />
             </motion.div>
           </motion.div>
         )}
@@ -696,11 +743,9 @@ export default function DashboardPage() {
         {showForm && (
           <ExamForm
             exam={editingExam}
+            initialData={aiInitialData}
             onSuccess={handleFormSuccess}
-            onClose={() => {
-              setShowForm(false);
-              setEditingExam(null);
-            }}
+            onClose={handleFormClose}
           />
         )}
       </AnimatePresence>

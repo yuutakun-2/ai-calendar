@@ -10,6 +10,7 @@ import type { Exam } from "@/app/dashboard/page";
 
 interface Props {
   exam: Exam | null;
+  initialData?: Partial<Exam> | null;
   onSuccess: () => void;
   onClose: () => void;
 }
@@ -17,7 +18,12 @@ interface Props {
 const EXAM_TYPES = ["Mid Term", "End Term", "CA", "Lab", "Other"] as const;
 const CATEGORIES = ["Regular", "Backlog"] as const;
 
-export default function ExamForm({ exam, onSuccess, onClose }: Props) {
+export default function ExamForm({
+  exam,
+  initialData,
+  onSuccess,
+  onClose,
+}: Props) {
   const [serverError, setServerError] = useState("");
 
   const {
@@ -38,7 +44,20 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
           startTime: exam.startTime,
           endTime: exam.endTime,
         }
-      : undefined,
+      : initialData
+        ? {
+            code: initialData.code || "",
+            subject: initialData.subject || "",
+            examType:
+              (initialData.examType as ExamInput["examType"]) || undefined,
+            category:
+              (initialData.category as ExamInput["category"]) || undefined,
+            semester: initialData.semester || undefined,
+            date: initialData.date ? initialData.date.slice(0, 10) : "",
+            startTime: initialData.startTime || "",
+            endTime: initialData.endTime || "",
+          }
+        : undefined,
   });
 
   useEffect(() => {
@@ -53,10 +72,21 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
         startTime: exam.startTime,
         endTime: exam.endTime,
       });
+    } else if (initialData) {
+      reset({
+        code: initialData.code || "",
+        subject: initialData.subject || "",
+        examType: (initialData.examType as ExamInput["examType"]) || undefined,
+        category: (initialData.category as ExamInput["category"]) || undefined,
+        semester: initialData.semester || undefined,
+        date: initialData.date ? initialData.date.slice(0, 10) : "",
+        startTime: initialData.startTime || "",
+        endTime: initialData.endTime || "",
+      });
     } else {
       reset({});
     }
-  }, [exam, reset]);
+  }, [exam, initialData, reset]);
 
   const onSubmit = async (data: ExamInput) => {
     setServerError("");
@@ -226,7 +256,7 @@ export default function ExamForm({ exam, onSuccess, onClose }: Props) {
           <div style={{ marginBottom: "16px" }}>
             <label className="field-label">Semester</label>
             <input
-              {...register("semester")}
+              {...register("semester", { valueAsNumber: true })}
               type="number"
               min="1"
               placeholder="e.g. 1"

@@ -17,30 +17,24 @@ interface ExamField {
   endTime: string;
 }
 
-interface ExamDate {
-  date: string;
-  fields: Partial<ExamField>;
-  missingFields: string[];
-  isConfirmed: boolean;
-}
+// Simplified ExamField to pass back
+// No ExamDate interface needed as we no longer manage confirmation state here
 
 interface Props {
   onExamAdded: () => void;
+  onExamsDetected: (exams: Partial<ExamField>[]) => void;
 }
 
-export default function AIAssistant({ onExamAdded }: Props) {
+export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
   const { theme: themeName } = useTheme();
   const theme = THEMES[themeName as keyof typeof THEMES];
 
-  // State for managing multiple exam dates
-  const [examDates, setExamDates] = useState<ExamDate[]>([]);
-  const [currentDateIndex, setCurrentDateIndex] = useState(0);
   const [messages, setMessages] = useState<
     Array<{ role: "user" | "assistant" | "error"; text: string }>
   >([
     {
       role: "assistant",
-      text: "Hi! I'm your enhanced exam assistant 🎓 I can now handle multiple exam dates. Tell me about your exams, and I'll help you schedule them one by one. I'll track which fields are missing for each exam date.",
+      text: "Hi! I'm your enhanced exam assistant 🎓 Tell me about your exams, and I'll extract the details to help you schedule them.",
     },
   ]);
 
@@ -103,12 +97,7 @@ export default function AIAssistant({ onExamAdded }: Props) {
     try {
       const { data } = await axios.post("/api/ai", {
         message: msg,
-        examDates: examDates.map((ed) => ({
-          date: ed.date,
-          fields: ed.fields,
-          missingFields: ed.missingFields,
-          isConfirmed: ed.isConfirmed,
-        })),
+        examDates: [], // We no longer maintain this state here
       });
 
       if (data.status === "off_topic") {
@@ -117,97 +106,47 @@ export default function AIAssistant({ onExamAdded }: Props) {
           { role: "error", text: data.message },
         ]);
       } else if (data.status === "incomplete") {
-        // Handle incomplete response with missing fields
-        if (data.examDates && Array.isArray(data.examDates)) {
-          setExamDates(data.examDates);
-
-          // Find first incomplete exam to focus on
-          const firstIncompleteIndex = data.examDates.findIndex(
-            (ed: any) => !ed.isConfirmed,
-          );
-          if (firstIncompleteIndex !== -1) {
-            setCurrentDateIndex(firstIncompleteIndex);
-          }
-        }
-
         setMessages((prev: any) => [
           ...prev,
           {
             role: "assistant",
             text:
               data.message ||
-              "I need more information to process your request.",
+              "I found some exam details. Please review them in the form.",
           },
         ]);
+
+        if (
+          data.examDates &&
+          Array.isArray(data.examDates) &&
+          data.examDates.length > 0
+        ) {
+          onExamsDetected(data.examDates.map((ed: any) => ed.fields));
+        }
       } else if (data.status === "complete") {
-        // Handle complete response with confirmed exam(s)
+        // Handle complete response
         if (data.examDates && Array.isArray(data.examDates)) {
-          setExamDates(data.examDates);
+          setMessages((prev: any) => [
+            ...prev,
+            {
+              role: "assistant",
+              text: "I've detected the exam details. Please confirm them in the form.",
+            },
+          ]);
 
-          // Process ALL confirmed exams
-          const confirmedExams = data.examDates.filter(
-            (ed: any) => ed.isConfirmed,
-          );
-
-          if (confirmedExams.length > 0) {
-            let successCount = 0;
-            let failureCount = 0;
-
-            // Process each confirmed exam
-            for (const exam of confirmedExams) {
-              try {
-                await axios.post("/api/exams", {
-                  ...exam.fields,
-                  completed: false,
-                });
-                successCount++;
-              } catch {
-                failureCount++;
-              }
-            }
-
-            // Update messages with results
-            setMessages((prev: any) => [
-              ...prev,
-              {
-                role: "assistant",
-                text: `✅ ${successCount} exam(s) have been added to your calendar!${failureCount > 0 ? ` (${failureCount} failed)` : ""}`,
-              },
-            ]);
-
-            // Check if there are incomplete exams remaining
-            const incompleteExams = data.examDates.filter(
-              (ed: any) => !ed.isConfirmed,
-            );
-            if (incompleteExams.length > 0) {
-              // Focus on first incomplete exam
-              const firstIncompleteIndex = data.examDates.findIndex(
-                (ed: any) => !ed.isConfirmed,
-              );
-              if (firstIncompleteIndex !== -1) {
-                setCurrentDateIndex(firstIncompleteIndex);
-                setMessages((prev: any) => [
-                  ...prev,
-                  {
-                    role: "assistant",
-                    text: `Now let's work on the exam for ${data.examDates[firstIncompleteIndex].date}. What details can you provide?`,
-                  },
-                ]);
-              }
-            } else {
-              // All exams processed
-              setExamDates([]);
-              setCurrentDateIndex(0);
-              setMessages((prev: any) => [
-                ...prev,
-                {
-                  role: "assistant",
-                  text: `🎉 All ${data.examDates.length} exams have been successfully added to your calendar!`,
-                },
-              ]);
-              onExamAdded();
-            }
+          if (data.examDates.length > 0) {
+            onExamsDetected(data.examDates.map((ed: any) => ed.fields));
           }
+        } else if (data.data) {
+          setMessages((prev: any) => [
+            ...prev,
+            {
+              role: "assistant",
+              text: "I've detected the exam details. Please confirm them in the form.",
+            },
+          ]);
+
+          onExamsDetected([data.data]);
         }
       } else {
         setMessages((prev: any) => [
@@ -248,121 +187,40 @@ export default function AIAssistant({ onExamAdded }: Props) {
 
       const { data } = await axios.post("/api/ai", {
         message: msg,
-        examDates: examDates.map((ed) => ({
-          date: ed.date,
-          fields: ed.fields,
-          missingFields: ed.missingFields,
-          isConfirmed: ed.isConfirmed,
-        })),
+        examDates: [],
         file: file,
       });
 
       if (data.status === "complete") {
         if (data.examDates && Array.isArray(data.examDates)) {
-          setExamDates(data.examDates);
+          setMessages((prev: any) => [
+            ...prev,
+            {
+              role: "assistant",
+              text: `📄 Found ${data.examDates.length} exam date(s) in your file. Please review them in the form.`,
+            },
+          ]);
 
-          // Process ALL confirmed exams
-          const confirmedExams = data.examDates.filter(
-            (ed: any) => ed.isConfirmed,
-          );
-
-          if (confirmedExams.length > 0) {
-            let successCount = 0;
-            let failureCount = 0;
-
-            // Process each confirmed exam
-            for (const exam of confirmedExams) {
-              try {
-                await axios.post("/api/exams", {
-                  ...exam.fields,
-                  completed: false,
-                });
-                successCount++;
-              } catch {
-                failureCount++;
-              }
-            }
-
-            // Update messages with results
-            setMessages((prev: any) => [
-              ...prev,
-              {
-                role: "assistant",
-                text: `📄 ${successCount} exam(s) from your file have been added to your calendar!${failureCount > 0 ? ` (${failureCount} failed)` : ""}`,
-              },
-            ]);
-
-            // Check if there are incomplete exams remaining
-            const incompleteExams = data.examDates.filter(
-              (ed: any) => !ed.isConfirmed,
-            );
-            if (incompleteExams.length > 0) {
-              // Focus on first incomplete exam
-              const firstIncompleteIndex = data.examDates.findIndex(
-                (ed: any) => !ed.isConfirmed,
-              );
-              if (firstIncompleteIndex !== -1) {
-                setCurrentDateIndex(firstIncompleteIndex);
-                setMessages((prev: any) => [
-                  ...prev,
-                  {
-                    role: "assistant",
-                    text: `Now let's work on the exam for ${data.examDates[firstIncompleteIndex].date}. What details can you provide?`,
-                  },
-                ]);
-              }
-            } else {
-              // All exams processed
-              setExamDates([]);
-              setCurrentDateIndex(0);
-              setMessages((prev: any) => [
-                ...prev,
-                {
-                  role: "assistant",
-                  text: `🎉 All ${data.examDates.length} exams from your file have been successfully added to your calendar!`,
-                },
-              ]);
-              onExamAdded();
-            }
-          } else {
-            // No confirmed exams, focus on first incomplete
-            const firstIncompleteIndex = data.examDates.findIndex(
-              (ed: any) => !ed.isConfirmed,
-            );
-            if (firstIncompleteIndex !== -1) {
-              setCurrentDateIndex(firstIncompleteIndex);
-              setMessages((prev: any) => [
-                ...prev,
-                {
-                  role: "assistant",
-                  text: `📄 Found ${data.examDates.length} exam date(s) in your file. Let's review them one by one. Starting with exam for ${data.examDates[firstIncompleteIndex].date}.`,
-                },
-              ]);
-            }
+          if (data.examDates.length > 0) {
+            onExamsDetected(data.examDates.map((ed: any) => ed.fields));
           }
         }
       } else if (data.status === "incomplete") {
         if (data.examDates && Array.isArray(data.examDates)) {
-          setExamDates(data.examDates);
+          setMessages((prev: any) => [
+            ...prev,
+            {
+              role: "assistant",
+              text:
+                data.message ||
+                "I found some exam details. Please review them in the form.",
+            },
+          ]);
 
-          // Find first incomplete exam to focus on
-          const firstIncompleteIndex = data.examDates.findIndex(
-            (ed: any) => !ed.isConfirmed,
-          );
-          if (firstIncompleteIndex !== -1) {
-            setCurrentDateIndex(firstIncompleteIndex);
+          if (data.examDates.length > 0) {
+            onExamsDetected(data.examDates.map((ed: any) => ed.fields));
           }
         }
-
-        setMessages((prev: any) => [
-          ...prev,
-          {
-            role: "assistant",
-            text:
-              data.message ||
-              "I need more information to process your request.",
-          },
-        ]);
       } else {
         setMessages((prev: any) => [
           ...prev,
@@ -394,52 +252,6 @@ export default function AIAssistant({ onExamAdded }: Props) {
     } else {
       recognitionRef.current.start();
     }
-  };
-
-  const confirmCurrentExam = () => {
-    if (currentDateIndex >= examDates.length) return;
-
-    const currentExam = examDates[currentDateIndex];
-    if (!currentExam) return;
-
-    // Mark current exam as confirmed
-    const updatedExamDates = [...examDates];
-    updatedExamDates[currentDateIndex] = {
-      ...currentExam,
-      isConfirmed: true,
-    };
-
-    setExamDates(updatedExamDates);
-
-    setMessages((prev: any) => [
-      ...prev,
-      {
-        role: "assistant",
-        text: `✅ Confirmed exam for ${currentExam.date}. Ready to add to calendar.`,
-      },
-    ]);
-  };
-
-  const updateExamField = (field: keyof ExamField, value: string) => {
-    if (currentDateIndex >= examDates.length) return;
-
-    const currentExam = examDates[currentDateIndex];
-    if (!currentExam) return;
-
-    const updatedExamDates = [...examDates];
-    updatedExamDates[currentDateIndex] = {
-      ...currentExam,
-      fields: {
-        ...currentExam.fields,
-        [field]: value,
-      },
-    };
-
-    setExamDates(updatedExamDates);
-  };
-
-  const getCurrentExam = () => {
-    return examDates[currentDateIndex] || null;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -483,7 +295,7 @@ export default function AIAssistant({ onExamAdded }: Props) {
               Enhanced AI Exam Assistant
             </p>
             <p style={{ color: theme.textMuted, fontSize: "0.75rem" }}>
-              Multi-exam scheduling with field tracking
+              Extracts info and opens the form for you
             </p>
           </div>
         </div>
@@ -542,144 +354,12 @@ export default function AIAssistant({ onExamAdded }: Props) {
               </motion.div>
             ))}
           </AnimatePresence>
-
-          {/* Current Exam Status */}
-          {getCurrentExam() && (
-            <div
-              style={{
-                padding: "16px",
-                background: theme.bgSecondary,
-                borderRadius: "8px",
-                border: `1px solid ${theme.border}`,
-              }}
-            >
-              <div
-                style={{
-                  marginBottom: "12px",
-                  color: theme.textPrimary,
-                  fontWeight: 600,
-                }}
-              >
-                📅 Exam for {getCurrentExam()?.date}
-              </div>
-
-              {/* Missing Fields */}
-              {getCurrentExam()?.missingFields.length > 0 && (
-                <div style={{ marginBottom: "12px" }}>
-                  <p
-                    style={{
-                      color: theme.danger,
-                      fontSize: "0.85rem",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    ⚠️ Missing fields:{" "}
-                    {getCurrentExam()?.missingFields.join(", ")}
-                  </p>
-                </div>
-              )}
-
-              {/* Current Fields */}
-              <div style={{ marginBottom: "16px" }}>
-                {Object.entries(getCurrentExam()?.fields || {}).map(
-                  ([field, value]) => (
-                    <div key={field} style={{ marginBottom: "8px" }}>
-                      <label
-                        style={{
-                          display: "block",
-                          color: theme.textSecondary,
-                          fontSize: "0.85rem",
-                          marginBottom: "4px",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {field.charAt(0).toUpperCase() + field.slice(1)}:
-                      </label>
-                      <input
-                        type={
-                          field === "date"
-                            ? "date"
-                            : field === "startTime" || field === "endTime"
-                              ? "time"
-                              : "text"
-                        }
-                        value={value}
-                        onChange={(e) =>
-                          updateExamField(
-                            field as keyof ExamField,
-                            e.target.value,
-                          )
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "8px 12px",
-                          background: theme.bgCard,
-                          border: `1px solid ${theme.border}`,
-                          borderRadius: "4px",
-                          color: theme.textPrimary,
-                          fontSize: "0.9rem",
-                        }}
-                      />
-                    </div>
-                  ),
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button
-                  onClick={confirmCurrentExam}
-                  disabled={getCurrentExam()?.missingFields.length > 0}
-                  style={{
-                    flex: 1,
-                    padding: "10px 16px",
-                    background:
-                      getCurrentExam()?.missingFields.length === 0
-                        ? theme.success
-                        : theme.border,
-                    color:
-                      getCurrentExam()?.missingFields.length === 0
-                        ? "white"
-                        : theme.textMuted,
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor:
-                      getCurrentExam()?.missingFields.length === 0
-                        ? "pointer"
-                        : "not-allowed",
-                    fontSize: "0.9rem",
-                    fontWeight: 500,
-                  }}
-                >
-                  {getCurrentExam()?.missingFields.length === 0
-                    ? "✅ Confirm & Add to Calendar"
-                    : "⚠️ Fill Missing Fields"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Progress Indicator */}
-          {examDates.length > 0 && (
-            <div
-              style={{
-                padding: "12px 16px",
-                background: theme.bgSecondary,
-                borderRadius: "8px",
-                textAlign: "center",
-                fontSize: "0.85rem",
-                color: theme.textMuted,
-              }}
-            >
-              Exam {currentDateIndex + 1} of {examDates.length}
-            </div>
-          )}
         </div>
 
         {/* Input */}
         <div
           style={{
-            padding: "16px 20px",
+            padding: "12px 12px",
             borderTop: `1px solid ${theme.border}`,
             display: "flex",
             flexDirection: "column",
@@ -694,9 +374,7 @@ export default function AIAssistant({ onExamAdded }: Props) {
               placeholder={
                 loading
                   ? "AI is thinking…"
-                  : getCurrentExam()
-                    ? `Describe details for exam on ${getCurrentExam()?.date} (e.g., 'Math exam on March 15')`
-                    : "Describe your exam (e.g., 'Math exam on March 15, 9:00 AM')"
+                  : "Describe your exam (e.g., 'Math exam on March 15, 9:00 AM')"
               }
               disabled={loading || fileLoading}
               style={{
@@ -708,6 +386,7 @@ export default function AIAssistant({ onExamAdded }: Props) {
                 background: theme.bgCard,
                 border: `1px solid ${theme.border}`,
                 borderRadius: "6px",
+                padding: "4px 8px",
                 color: theme.textPrimary,
                 fontSize: "0.9rem",
               }}
