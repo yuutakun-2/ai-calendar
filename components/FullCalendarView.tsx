@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -27,6 +27,9 @@ export default function FullCalendarView({
   selectedDate,
 }: Props) {
   const calendarRef = useRef<FullCalendar>(null);
+  const calendarContainerRef = useRef<HTMLDivElement>(null);
+  const [isTodaySelectedInTimeView, setIsTodaySelectedInTimeView] =
+    useState(false);
   const { theme: themeName } = useTheme();
   const theme = THEMES[themeName as keyof typeof THEMES];
 
@@ -186,20 +189,23 @@ export default function FullCalendarView({
         ${highlightCSS}
         
         .fc-theme-standard .fc-button-primary {
-          background-color: var(--fc-accent-color) !important;
-          border-color: var(--fc-accent-color) !important;
-          color: white !important;
+          background-color: transparent !important;
+          border-color: var(--fc-border-color) !important;
+          color: var(--fc-text-color) !important;
         }
         
         .fc-theme-standard .fc-button-primary:hover {
-          opacity: 0.8 !important;
+          background-color: var(--fc-bg-secondary) !important;
+          border-color: var(--fc-border-color) !important;
+          color: var(--fc-text-color) !important;
+          opacity: 1 !important;
         }
         
         .fc-theme-standard .fc-button-primary:disabled {
-          background-color: var(--fc-accent-color) !important;
-          border-color: var(--fc-accent-color) !important;
-          color: white !important;
-          opacity: 1 !important;
+          background-color: transparent !important;
+          border-color: var(--fc-border-color) !important;
+          color: var(--fc-text-color) !important;
+          opacity: 0.6 !important;
           cursor: default !important;
         }
 
@@ -207,7 +213,14 @@ export default function FullCalendarView({
           background-color: var(--fc-accent-color) !important;
           border-color: var(--fc-accent-color) !important;
           color: white !important;
-          box-shadow: 0 0 0 2px var(--fc-bg-color), 0 0 0 4px var(--fc-accent-color) !important;
+          box-shadow: none !important;
+        }
+
+        .fc-theme-standard .fc-today-button.selected-today {
+          background-color: var(--fc-accent-color) !important;
+          border-color: var(--fc-accent-color) !important;
+          color: white !important;
+          box-shadow: none !important;
         }
         
         .fc-theme-standard .fc-toolbar-title {
@@ -250,6 +263,19 @@ export default function FullCalendarView({
     }
   }, [selectedDate]);
 
+  useEffect(() => {
+    const todayButton = calendarContainerRef.current?.querySelector(
+      ".fc-today-button",
+    ) as HTMLButtonElement | null;
+    if (!todayButton) return;
+
+    if (isTodaySelectedInTimeView) {
+      todayButton.classList.add("selected-today");
+    } else {
+      todayButton.classList.remove("selected-today");
+    }
+  }, [isTodaySelectedInTimeView]);
+
   // Convert exams to FullCalendar events
   const events = exams.map((exam) => {
     // Parse the ISO date and extract just the date part
@@ -287,6 +313,41 @@ export default function FullCalendarView({
 
   const handleEventMouseLeave = (info: any) => {
     info.el.style.opacity = "1";
+  };
+
+  const updateTodayButtonState = () => {
+    const calendarApi = calendarRef.current?.getApi();
+    if (!calendarApi) return;
+
+    const viewType = calendarApi.view.type;
+    const isTimeView =
+      viewType === "timeGridWeek" || viewType === "timeGridDay";
+    if (!isTimeView) {
+      setIsTodaySelectedInTimeView(false);
+      return;
+    }
+
+    const today = new Date();
+    const todayTime = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    ).getTime();
+    const viewStart = new Date(calendarApi.view.currentStart);
+    const viewEndExclusive = new Date(calendarApi.view.currentEnd);
+    const viewStartTime = new Date(
+      viewStart.getFullYear(),
+      viewStart.getMonth(),
+      viewStart.getDate(),
+    ).getTime();
+    const viewEndTime = new Date(
+      viewEndExclusive.getFullYear(),
+      viewEndExclusive.getMonth(),
+      viewEndExclusive.getDate(),
+    ).getTime();
+    const isToday = todayTime >= viewStartTime && todayTime < viewEndTime;
+
+    setIsTodaySelectedInTimeView(isToday);
   };
 
   const renderEventContent = (eventInfo: any) => {
@@ -370,16 +431,17 @@ export default function FullCalendarView({
           </div>
         </div>
       ) : (
-        <div style={{ overflowY: "auto", flex: 1 }}>
+        <div ref={calendarContainerRef} style={{ overflowY: "auto", flex: 1 }}>
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="timeGridWeek"
+            initialView="dayGridMonth"
             headerToolbar={{
               left: "prev,next today",
               center: "title",
               right: "dayGridMonth,timeGridWeek,timeGridDay",
             }}
+            datesSet={updateTodayButtonState}
             events={events}
             eventClick={handleEventClick}
             eventMouseEnter={handleEventMouseEnter}
@@ -395,6 +457,28 @@ export default function FullCalendarView({
             selectable={true}
             selectMirror={true}
             dayHeaderFormat={{ weekday: "short" }}
+            allDayText="All-day"
+            slotLabelContent={(slotInfo) => slotInfo.text.toUpperCase()}
+            scrollTime="08:00:00"
+            scrollTimeReset={false}
+            views={{
+              timeGridWeek: {
+                scrollTime: "08:00:00",
+              },
+              timeGridDay: {
+                scrollTime: "08:00:00",
+              },
+            }}
+            customButtons={{
+              today: {
+                text: "Today",
+                click: () => {
+                  const calendarApi = calendarRef.current?.getApi();
+                  calendarApi?.today();
+                  updateTodayButtonState();
+                },
+              },
+            }}
             titleFormat={{
               month: "long",
               year: "numeric",
