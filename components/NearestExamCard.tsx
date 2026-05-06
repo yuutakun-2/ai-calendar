@@ -23,7 +23,7 @@ export default function NearestExamCard({ exam, loading }: Props) {
     return (
       <div
         className="skeleton"
-        style={{ height: "90px", marginBottom: "24px", borderRadius: "16px" }}
+        style={{ height: "90px", borderRadius: "16px" }}
       />
     );
   }
@@ -37,7 +37,6 @@ export default function NearestExamCard({ exam, loading }: Props) {
         className="glass"
         style={{
           padding: "20px 24px",
-          marginBottom: "24px",
           display: "flex",
           alignItems: "center",
           gap: "16px",
@@ -72,7 +71,6 @@ export default function NearestExamCard({ exam, loading }: Props) {
       className="glass"
       style={{
         padding: "20px 24px",
-        marginBottom: "24px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",

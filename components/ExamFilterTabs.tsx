@@ -2,16 +2,18 @@
 
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useTheme } from "./ThemeToggle";
+import { THEMES } from "@/lib/themes";
 
 const FILTERS = [
-  { name: "All", icon: "📋" },
-  { name: "Mid Term", icon: "📝" },
-  { name: "End Term", icon: "📚" },
-  { name: "CA", icon: "📄" },
-  { name: "Lab", icon: "🔬" },
-  { name: "Other", icon: "📌" },
-  { name: "Regular", icon: "✅" },
-  { name: "Backlog", icon: "⏰" },
+  "All",
+  "Mid Term",
+  "End Term",
+  "CA",
+  "Lab",
+  "Other",
+  "Regular",
+  "Backlog",
 ];
 
 interface Props {
@@ -21,6 +23,8 @@ interface Props {
 
 export default function ExamFilterTabs({ active, onChange }: Props) {
   const [isMobile, setIsMobile] = useState(false);
+  const { theme: themeName } = useTheme();
+  const theme = THEMES[themeName as keyof typeof THEMES];
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -34,23 +38,21 @@ export default function ExamFilterTabs({ active, onChange }: Props) {
       style={{
         display: "flex",
         gap: "8px",
-        marginBottom: "20px",
         flexWrap: "wrap",
       }}
     >
-      {FILTERS.map((f) => (
+      {FILTERS.map((filterName) => (
         <button
-          key={f.name}
-          onClick={() => onChange(f.name)}
+          key={filterName}
+          onClick={() => onChange(filterName)}
           style={{
             position: "relative",
             padding: isMobile ? "8px 12px" : "6px 16px",
             borderRadius: "20px",
             border: "1px solid",
-            borderColor: active === f.name ? "var(--accent)" : "var(--border)",
+            borderColor: active === filterName ? theme.accent : theme.border,
             background: "transparent",
-            color:
-              active === f.name ? "var(--accent-light)" : "var(--text-muted)",
+            color: active === filterName ? theme.accent : theme.textMuted,
             fontWeight: 500,
             fontSize: "0.8rem",
             cursor: "pointer",
@@ -58,10 +60,9 @@ export default function ExamFilterTabs({ active, onChange }: Props) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            minWidth: isMobile ? "40px" : "auto",
           }}
         >
-          {active === f.name && (
+          {active === filterName && (
             <motion.div
               layoutId="filter-bg"
               style={{
@@ -73,9 +74,7 @@ export default function ExamFilterTabs({ active, onChange }: Props) {
               transition={{ duration: 0.15 }}
             />
           )}
-          <span style={{ position: "relative", zIndex: 1 }}>
-            {isMobile ? f.icon : f.name}
-          </span>
+          <span style={{ position: "relative", zIndex: 1 }}>{filterName}</span>
         </button>
       ))}
     </div>

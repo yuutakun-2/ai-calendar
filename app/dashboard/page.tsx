@@ -106,7 +106,7 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     await axios.post("/api/auth/logout");
-    router.push("/login");
+    window.location.assign("/login");
   };
 
   const handleDelete = async (id: string) => {
@@ -265,11 +265,12 @@ export default function DashboardPage() {
           flexDirection: "column",
           maxWidth: "1200px",
           margin: "0 auto",
-          padding: "24px 16px",
+          gap: "12px",
+          padding: "12px 16px",
         }}
       >
         {/* Top controls area */}
-        <div style={{ display: "grid", gap: "16px", marginBottom: "20px" }}>
+        <div style={{ display: "grid", gap: "12px" }}>
           <div
             style={{
               display: "grid",
@@ -299,16 +300,19 @@ export default function DashboardPage() {
                     border: active
                       ? `1px solid ${theme.accent}`
                       : `1px solid ${theme.border}`,
-                    background: active
-                      ? "linear-gradient(135deg, rgba(139,92,246,0.16), rgba(109,40,217,0.10))"
-                      : undefined,
+                    background: active ? theme.accent : undefined,
                     transition: "all 0.15s",
                     position: "relative",
                     zIndex: 5,
                   }}
                 >
                   <div
-                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 10,
+                    }}
                   >
                     <span style={{ fontSize: "1.2rem" }}>
                       {k === "nearest" ? "🔥" : k === "all" ? "📅" : "🔎"}
@@ -354,28 +358,16 @@ export default function DashboardPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.15 }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
               >
                 <ExamFilterTabs
                   active={activeFilter}
                   onChange={setActiveFilter}
                 />
-                <div
-                  className="glass"
-                  style={{
-                    padding: "16px",
-                    marginBottom: "12px",
-                    borderRadius: "16px",
-                    border: `1px solid ${theme.border}`,
-                  }}
-                >
-                  <p style={{ fontWeight: 700, marginBottom: 6 }}>
-                    Filter options
-                  </p>
-                  <p style={{ color: theme.textMuted, fontSize: "0.85rem" }}>
-                    Semester number and subject-based filtering will be added
-                    next.
-                  </p>
-                </div>
               </motion.div>
             ) : null}
           </AnimatePresence>
@@ -393,116 +385,38 @@ export default function DashboardPage() {
           }}
         >
           {/* Exam cards section */}
-          <div
-            style={{
-              width: isMobile ? "100%" : "350px",
-              flexShrink: 0,
-              display: "flex",
-              flexDirection: "column",
-              height: isMobile ? "120px" : "auto", // Reduced height on mobile to show only first card
-            }}
-          >
+          {calendarMode !== "nearest" && (
             <div
               style={{
-                flex: 1,
-                overflowY: "auto", // Enable vertical scrolling
-                background: theme.bgCard,
-                borderRadius: "12px",
-                border: `1px solid ${theme.border}`,
-                padding: "16px",
+                width: isMobile ? "100%" : "350px",
+                flexShrink: 0,
+                display: "flex",
+                flexDirection: "column",
+                height: isMobile ? "240px" : "auto", // Reduced height on mobile to show only first card
               }}
             >
-              <h3
+              <div
                 style={{
-                  margin: "0 0 16px 0",
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  color: theme.textPrimary,
+                  flex: 1,
+                  overflowY: "auto", // Enable vertical scrolling
+                  background: theme.bgCard,
+                  borderRadius: "12px",
+                  border: `1px solid ${theme.border}`,
+                  padding: "16px",
                 }}
               >
-                {calendarMode === "nearest"
-                  ? "Nearest Exam"
-                  : calendarMode === "filter"
-                    ? "Filtered Exams"
-                    : `All Exams (${calendarExams.length})`}
-              </h3>
-              {calendarMode === "nearest" && nearest ? (
-                <div
+                <h3
                   style={{
-                    padding: "16px",
-                    background: theme.bgSecondary,
-                    borderRadius: "8px",
-                    border: `2px solid ${theme.accent}`,
+                    margin: "0 0 16px 0",
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                    color: theme.textPrimary,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: "1rem",
-                      fontWeight: 600,
-                      color: theme.textPrimary,
-                      marginBottom: "8px",
-                    }}
-                  >
-                    {nearest.subject}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.85rem",
-                      color: theme.textMuted,
-                      marginBottom: "4px",
-                    }}
-                  >
-                    {nearest.examType} • {nearest.code}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.85rem",
-                      color: theme.textSecondary,
-                      marginBottom: "12px",
-                    }}
-                  >
-                    📅 {new Date(nearest.date).toLocaleDateString()}{" "}
-                    &nbsp;·&nbsp; 🕐 {nearest.startTime} – {nearest.endTime}
-                  </div>
-                  {nearest.examDescription && (
-                    <div
-                      style={{
-                        fontSize: "0.8rem",
-                        color: theme.textMuted,
-                        marginBottom: "12px",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      {nearest.examDescription}
-                    </div>
-                  )}
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      onClick={() => {
-                        setEditingExam(nearest);
-                        setAiInitialData(null);
-                        setDetectedExamsQueue([]);
-                        setShowForm(true);
-                      }}
-                      className="btn-primary"
-                      style={{ padding: "6px 12px", fontSize: "0.8rem" }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(nearest.id)}
-                      className="btn-danger"
-                      style={{ padding: "6px 12px", fontSize: "0.8rem" }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ) : (
+                  {calendarMode === "filter"
+                    ? "Filtered Exams"
+                    : `All Exams (${calendarExams.length})`}
+                </h3>
                 <div
                   style={{
                     display: "flex",
@@ -530,9 +444,9 @@ export default function DashboardPage() {
                     />
                   ))}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Calendar section */}
           <div

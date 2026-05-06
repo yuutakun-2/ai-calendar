@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -28,8 +28,6 @@ export default function FullCalendarView({
 }: Props) {
   const calendarRef = useRef<FullCalendar>(null);
   const calendarContainerRef = useRef<HTMLDivElement>(null);
-  const [isTodaySelectedInTimeView, setIsTodaySelectedInTimeView] =
-    useState(false);
   const { theme: themeName } = useTheme();
   const theme = THEMES[themeName as keyof typeof THEMES];
 
@@ -259,22 +257,13 @@ export default function FullCalendarView({
     if (selectedDate && calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
       const date = new Date(selectedDate);
-      calendarApi.gotoDate(date);
+      // Defer navigation to avoid FullCalendar flushSync during React lifecycle.
+      requestAnimationFrame(() => {
+        calendarApi.gotoDate(date);
+        syncTodayButtonState();
+      });
     }
   }, [selectedDate]);
-
-  useEffect(() => {
-    const todayButton = calendarContainerRef.current?.querySelector(
-      ".fc-today-button",
-    ) as HTMLButtonElement | null;
-    if (!todayButton) return;
-
-    if (isTodaySelectedInTimeView) {
-      todayButton.classList.add("selected-today");
-    } else {
-      todayButton.classList.remove("selected-today");
-    }
-  }, [isTodaySelectedInTimeView]);
 
   // Convert exams to FullCalendar events
   const events = exams.map((exam) => {
@@ -315,15 +304,20 @@ export default function FullCalendarView({
     info.el.style.opacity = "1";
   };
 
-  const updateTodayButtonState = () => {
+  const syncTodayButtonState = () => {
     const calendarApi = calendarRef.current?.getApi();
     if (!calendarApi) return;
+
+    const todayButton = calendarContainerRef.current?.querySelector(
+      ".fc-today-button",
+    ) as HTMLButtonElement | null;
+    if (!todayButton) return;
 
     const viewType = calendarApi.view.type;
     const isTimeView =
       viewType === "timeGridWeek" || viewType === "timeGridDay";
     if (!isTimeView) {
-      setIsTodaySelectedInTimeView(false);
+      todayButton.classList.remove("selected-today");
       return;
     }
 
@@ -346,8 +340,11 @@ export default function FullCalendarView({
       viewEndExclusive.getDate(),
     ).getTime();
     const isToday = todayTime >= viewStartTime && todayTime < viewEndTime;
-
-    setIsTodaySelectedInTimeView(isToday);
+    if (isToday) {
+      todayButton.classList.add("selected-today");
+    } else {
+      todayButton.classList.remove("selected-today");
+    }
   };
 
   const renderEventContent = (eventInfo: any) => {
@@ -441,7 +438,11 @@ export default function FullCalendarView({
               center: "title",
               right: "dayGridMonth,timeGridWeek,timeGridDay",
             }}
-            datesSet={updateTodayButtonState}
+            datesSet={() => {
+              queueMicrotask(() => {
+                syncTodayButtonState();
+              });
+            }}
             events={events}
             eventClick={handleEventClick}
             eventMouseEnter={handleEventMouseEnter}
@@ -475,7 +476,9 @@ export default function FullCalendarView({
                 click: () => {
                   const calendarApi = calendarRef.current?.getApi();
                   calendarApi?.today();
-                  updateTodayButtonState();
+                  queueMicrotask(() => {
+                    syncTodayButtonState();
+                  });
                 },
               },
             }}
