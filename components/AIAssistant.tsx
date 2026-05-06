@@ -23,11 +23,10 @@ interface ExamField {
 // No ExamDate interface needed as we no longer manage confirmation state here
 
 interface Props {
-  onExamAdded: () => void;
   onExamsDetected: (exams: Partial<ExamField>[]) => void;
 }
 
-export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
+export default function AIAssistant({ onExamsDetected }: Props) {
   const { theme: themeName } = useTheme();
   const theme = THEMES[themeName as keyof typeof THEMES];
 
@@ -46,7 +45,6 @@ export default function AIAssistant({ onExamAdded, onExamsDetected }: Props) {
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [voiceMode, setVoiceMode] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);

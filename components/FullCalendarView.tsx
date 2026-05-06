@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -13,7 +13,6 @@ interface Props {
   exams: Exam[];
   loading?: boolean;
   onEdit: (exam: Exam) => void;
-  onDelete: (id: string) => void;
   nearestExam?: Exam | null;
   filteredExams?: Exam[];
   selectedDate?: string | null;
@@ -23,7 +22,6 @@ export default function FullCalendarView({
   exams,
   loading,
   onEdit,
-  onDelete,
   nearestExam,
   filteredExams,
   selectedDate,
@@ -198,10 +196,18 @@ export default function FullCalendarView({
         }
         
         .fc-theme-standard .fc-button-primary:disabled {
-          background-color: var(--fc-border-color) !important;
-          border-color: var(--fc-border-color) !important;
-          color: var(--fc-text-color) !important;
-          opacity: 0.5 !important;
+          background-color: var(--fc-accent-color) !important;
+          border-color: var(--fc-accent-color) !important;
+          color: white !important;
+          opacity: 1 !important;
+          cursor: default !important;
+        }
+
+        .fc-theme-standard .fc-button-active {
+          background-color: var(--fc-accent-color) !important;
+          border-color: var(--fc-accent-color) !important;
+          color: white !important;
+          box-shadow: 0 0 0 2px var(--fc-bg-color), 0 0 0 4px var(--fc-accent-color) !important;
         }
         
         .fc-theme-standard .fc-toolbar-title {
@@ -274,7 +280,6 @@ export default function FullCalendarView({
   };
 
   const handleEventMouseEnter = (info: any) => {
-    const exam = info.event.extendedProps.exam as Exam;
     // Show tooltip or additional info on hover
     info.el.style.cursor = "pointer";
     info.el.style.opacity = "0.9";
@@ -285,7 +290,6 @@ export default function FullCalendarView({
   };
 
   const renderEventContent = (eventInfo: any) => {
-    const exam = eventInfo.event.extendedProps.exam;
     return (
       <div
         style={{
@@ -370,7 +374,7 @@ export default function FullCalendarView({
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
+            initialView="timeGridWeek"
             headerToolbar={{
               left: "prev,next today",
               center: "title",

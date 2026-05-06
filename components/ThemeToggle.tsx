@@ -27,7 +27,16 @@ export const useTheme = () => {
 };
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme());
+  // Always start with "dark" so server and client initial render match
+  const [theme, setTheme] = useState<Theme>("dark");
+
+  useEffect(() => {
+    // Sync with localStorage only after mount to avoid hydration mismatch
+    const stored = window.localStorage.getItem("theme") as Theme;
+    if (stored && Object.keys(THEMES).includes(stored)) {
+      setTheme(stored);
+    }
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -46,25 +55,49 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-const getInitialTheme = (): Theme => {
-  if (typeof window !== "undefined") {
-    const stored = window.localStorage.getItem("theme") as Theme;
-    if (stored && Object.keys(THEMES).includes(stored)) return stored;
-  }
-  return "dark";
-};
-
-export default function ThemeToggle() {
+export default function ThemeToggle({
+  showLabel = true,
+}: {
+  showLabel?: boolean;
+}) {
   const { theme, toggleTheme } = useTheme();
   const currentTheme = THEMES[theme as keyof typeof THEMES];
   const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Render a neutral placeholder before hydration to prevent mismatch
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        style={{
+          width: "auto",
+          height: "40px",
+          padding: "9px 18px",
+          background: "transparent",
+          border: "1px solid transparent",
+          borderRadius: "6px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
+          fontSize: "0.875rem",
+          visibility: "hidden",
+        }}
+      >
+        <span style={{ fontSize: "0.8rem" }}>🌙</span>
+      </button>
+    );
+  }
 
   return (
     <button
@@ -103,7 +136,7 @@ export default function ThemeToggle() {
       >
         {theme === "dark" ? "🌙" : "☀️"}
       </span>
-      {!isMobile && (
+      {!isMobile && showLabel && (
         <span
           style={{
             fontSize: "0.75rem",

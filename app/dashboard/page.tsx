@@ -9,9 +9,10 @@ import ExamFilterTabs from "@/components/ExamFilterTabs";
 import FullCalendarView from "@/components/FullCalendarView";
 import ExamForm from "@/components/ExamForm";
 import AIAssistant from "@/components/AIAssistant";
-import ThemeToggle, { useTheme } from "@/components/ThemeToggle";
+import { useTheme } from "@/components/ThemeToggle";
 import DashboardNavbar from "@/components/DashboardNavbar";
 import ExamCard from "@/components/ExamCard";
+import ExportModal from "@/components/ExportModal";
 import { THEMES } from "@/lib/themes";
 import { generateICS, parseICS } from "@/lib/ics";
 import { sortExams } from "@/lib/examUtils";
@@ -52,6 +53,8 @@ export default function DashboardPage() {
   );
   const [isMobile, setIsMobile] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
   const fetchExams = useCallback(async () => {
     try {
@@ -86,6 +89,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchExams();
+    // Fetch user email
+    axios
+      .get("/api/user/me")
+      .then(({ data }) => setUserEmail(data.email))
+      .catch(() => {});
   }, [fetchExams]);
 
   // Check if mobile for responsive layout
@@ -146,14 +154,18 @@ export default function DashboardPage() {
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
-    const icsContent = generateICS(exams);
+    setShowExportModal(true);
+  };
+
+  const handleDoExport = (selectedExams: Exam[], filename: string) => {
+    const icsContent = generateICS(selectedExams);
     const blob = new Blob([icsContent], {
       type: "text/calendar;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "exampal_calendar.ics";
+    a.download = `${filename}.ics`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -232,6 +244,7 @@ export default function DashboardPage() {
         isMobile={isMobile}
         themeName={themeName}
         theme={theme}
+        userEmail={userEmail}
         onExport={handleExport}
         onImport={handleImport}
         importInputRef={importInputRef}
@@ -540,7 +553,6 @@ export default function DashboardPage() {
                 setDetectedExamsQueue([]);
                 setShowForm(true);
               }}
-              onDelete={handleDelete}
               nearestExam={calendarMode === "nearest" ? nearest : null}
               filteredExams={
                 calendarMode === "filter" ? filteredExams : undefined
@@ -605,12 +617,22 @@ export default function DashboardPage() {
                 width: "min(420px, calc(100vw - 32px))",
               }}
             >
-              <AIAssistant
-                onExamAdded={fetchExams}
-                onExamsDetected={handleExamsDetected}
-              />
+              <AIAssistant onExamsDetected={handleExamsDetected} />
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Export Modal */}
+      <AnimatePresence>
+        {showExportModal && (
+          <ExportModal
+            exams={exams}
+            theme={theme}
+            themeName={themeName}
+            onExport={handleDoExport}
+            onClose={() => setShowExportModal(false)}
+          />
         )}
       </AnimatePresence>
 
