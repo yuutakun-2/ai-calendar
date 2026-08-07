@@ -15,6 +15,24 @@ interface DashboardNavbarProps {
   onLogout: () => void;
 }
 
+import React, { RefObject, useState, useRef, useEffect } from "react";
+import ThemeToggle from "./ThemeToggle";
+import { ThemeConfig } from "@/lib/themes";
+import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+
+interface DashboardNavbarProps {
+  isMobile: boolean;
+  themeName: string;
+  theme: ThemeConfig;
+  userEmail?: string;
+  onExport: () => void;
+  onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  importInputRef: RefObject<HTMLInputElement | null>;
+  onAddExam: () => void;
+  onLogout: () => void;
+}
+
 export default function DashboardNavbar({
   isMobile,
   themeName,
@@ -29,6 +47,7 @@ export default function DashboardNavbar({
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isDark = themeName === "dark";
+  const router = useRouter();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -128,7 +147,51 @@ export default function DashboardNavbar({
 
         <ThemeToggle showLabel={false} />
 
-        <div style={{ position: "relative" }} ref={dropdownRef}>
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+          ref={dropdownRef}
+        >
+          <button
+            onClick={() => router.push("/dashboard/profile")}
+            aria-label="Edit profile"
+            title="Edit profile"
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              background: isDark
+                ? "rgba(255,255,255,0.05)"
+                : "rgba(0,0,0,0.05)",
+              border: `1px solid ${theme.border}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              overflow: "hidden",
+              padding: 0,
+              transition: "border-color 0.2s, transform 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                theme.accent;
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                theme.border;
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(0)";
+            }}
+          >
+            <div style={{ fontSize: "1.2rem" }}>✏️</div>
+          </button>
+
           <button
             onClick={() => setShowDropdown(!showDropdown)}
             style={{
@@ -210,6 +273,24 @@ export default function DashboardNavbar({
                     </p>
                   </div>
                 )}
+
+                <button
+                  onClick={() => {
+                    setShowDropdown(false);
+                    router.push("/dashboard/profile");
+                  }}
+                  style={dropdownItemStyle}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = isDark
+                      ? "rgba(255,255,255,0.05)"
+                      : "rgba(0,0,0,0.05)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                >
+                  <span>⚙️</span> Profile Settings
+                </button>
 
                 <button
                   onClick={() => {
