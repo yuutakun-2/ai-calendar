@@ -15,6 +15,8 @@ interface DashboardNavbarProps {
   onLogout: () => void;
 }
 
+import Link from "next/link";
+
 export default function DashboardNavbar({
   isMobile,
   themeName,
@@ -210,6 +212,22 @@ export default function DashboardNavbar({
                     </p>
                   </div>
                 )}
+
+                <Link
+                  href="/dashboard/profile"
+                  style={{ ...dropdownItemStyle, textDecoration: "none" }}
+                  onClick={() => setShowDropdown(false)}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = isDark
+                      ? "rgba(255,255,255,0.05)"
+                      : "rgba(0,0,0,0.05)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                >
+                  <span>⚙️</span> Profile Settings
+                </Link>
 
                 <button
                   onClick={() => {
